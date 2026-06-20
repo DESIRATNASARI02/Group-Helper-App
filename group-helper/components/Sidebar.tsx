@@ -1,12 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 
+interface User {
+  _id: string;
+  name: string;
+  email: string;
+  avatarColor?: string;
+}
+
 const navItems = [
   { href: "/dashboard", icon: "🏠", label: "Dashboard" },
+  { href: "/groups", icon: "👥", label: "My Groups" },
   { href: "/dashboard/tasks", icon: "✅", label: "Tasks" },
   { href: "/dashboard/notes", icon: "📝", label: "Notes" },
   { href: "/dashboard/schedule", icon: "📅", label: "Schedule" },
@@ -17,6 +25,27 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const res = await fetch("/api/auth/me");
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data.user);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   return (
     <aside
@@ -40,13 +69,17 @@ export default function Sidebar() {
       {/* Group Selector */}
       <div className="p-3 border-b border-base-300">
         <p className="text-xs text-base-content/40 uppercase tracking-wider mb-2">
-          Grup saya
+          My Groups
         </p>
-        <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer"
-          style={{ background: "rgba(108,99,255,0.2)" }}>
-          <div className="w-2 h-2 rounded-full" style={{ background: "#6C63FF" }}></div>
-          <span className="text-sm text-white">Hacktiv8 Phase 3</span>
-        </div>
+        <Link href="/groups">
+          <div
+            className="flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+            style={{ background: "rgba(108,99,255,0.2)" }}
+          >
+            <div className="w-2 h-2 rounded-full" style={{ background: "#6C63FF" }}></div>
+            <span className="text-sm text-white">Select Group</span>
+          </div>
+        </Link>
       </div>
 
       {/* Nav Items */}
@@ -76,13 +109,18 @@ export default function Sidebar() {
         <div className="flex items-center gap-2">
           <div
             className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-            style={{ background: "#CECBF6", color: "#3C3489" }}
+            style={{
+              background: user?.avatarColor || "#CECBF6",
+              color: "#3C3489",
+            }}
           >
-            DR
+            {user ? getInitials(user.name) : ".."}
           </div>
           <div>
-            <p className="text-xs font-medium text-white">Desi Ratna</p>
-            <p className="text-xs text-base-content/40">Captain</p>
+            <p className="text-xs font-medium text-white">
+              {user ? user.name : "Loading..."}
+            </p>
+            <p className="text-xs text-base-content/40">Member</p>
           </div>
         </div>
       </div>
