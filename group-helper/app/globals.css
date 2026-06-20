@@ -1,6 +1,7 @@
 @import "tailwindcss";
-@plugin "daisyui";
-
+@plugin "daisyui" {
+  themes: light, dark, night, corporate;
+}
 
 @theme inline {
   --color-background: var(--background);
