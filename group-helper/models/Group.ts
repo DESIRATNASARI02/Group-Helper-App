@@ -10,10 +10,24 @@ const GroupSchema = new Schema(
             type: String,
             default: "",
         },
+        topic: {
+            type: String,
+            default: "",
+        },
         ownerId: {
             type: Schema.Types.ObjectId,
             ref: "User",
             required: true,
+        },
+        members: [
+            {
+                type: Schema.Types.ObjectId,
+                ref: "User",
+            },
+        ],
+        isPublic: {
+            type: Boolean,
+            default: true,
         },
     },
     {
