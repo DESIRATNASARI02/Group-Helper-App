@@ -8,7 +8,7 @@ export default function AISummary({ summary, onClose }: AISummaryProps) {
 
   return (
     <div
-      className="mx-4 mt-3 p-4 rounded-xl border border-purple-500/30 flex-shrink-0"
+      className="mx-4 mt-3 p-4 rounded-xl border border-purple-500/30 .flex-shrink-0"
       style={{ background: "#2a1f5e" }}
     >
       <div className="flex items-center justify-between mb-2">

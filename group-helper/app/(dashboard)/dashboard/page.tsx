@@ -146,7 +146,7 @@ export default function DashboardPage() {
             {schedules.map((s, i) => (
               <div key={i} className="flex items-center gap-3">
                 <span className="text-xs text-base-content/40 w-10">{s.time}</span>
-                <div className="w-1 h-10 rounded-full flex-shrink-0" style={{ background: s.color }}></div>
+                <div className="w-1 h-10 rounded-full .flex-shrink-0" style={{ background: s.color }}></div>
                 <div>
                   <p className="text-sm font-medium text-white">{s.title}</p>
                   <p className="text-xs text-base-content/50">{s.members}</p>
