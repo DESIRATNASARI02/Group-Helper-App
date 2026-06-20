@@ -34,8 +34,15 @@ export default function LoginPage() {
         setError(data.message);
         return;
       }
+      
+      const groupRes = await fetch("/api/groups/my");
+      const groupData = await groupRes.json();
 
-      router.push("/dashboard");
+      if (groupData.groups?.length > 0) {
+        router.push("/dashboard"); 
+      } else {
+        router.push("/groups"); 
+      }
 
     } catch (err) {
       setError("Something went wrong. Please try again.");
