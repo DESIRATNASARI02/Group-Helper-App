@@ -127,7 +127,7 @@ export default function RegisterPage() {
             <div key={i} className="flex gap-3">
               <div className="flex flex-col items-center">
                 <div
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold .flex-shrink-0"
                   style={{
                     background: step.active ? "#EF9F27" : "rgba(255,255,255,0.2)",
                     color: "white",
@@ -174,7 +174,7 @@ export default function RegisterPage() {
               </label>
               <div className="flex items-center gap-3">
                 <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center text-base font-bold flex-shrink-0"
+                  className="w-12 h-12 rounded-full flex items-center justify-center text-base font-bold .flex-shrink-0"
                   style={{
                     background: form.avatarColor,
                     color: selectedColor?.text || "#3C3489",
