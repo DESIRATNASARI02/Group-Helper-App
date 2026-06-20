@@ -117,7 +117,7 @@ export default function DashboardPage() {
               return (
                 <div key={i} className="flex items-center gap-3 py-2 border-b border-white/5 last:border-0">
                   <div
-                    className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0 border"
+                    className="w-4 h-4 rounded flex items-center justify-center .flex-shrink-0 border"
                     style={task.status === "done"
                       ? { background: "#1D9E75", borderColor: "#1D9E75" }
                       : { borderColor: "rgba(255,255,255,0.2)" }

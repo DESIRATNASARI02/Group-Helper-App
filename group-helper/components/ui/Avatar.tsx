@@ -19,7 +19,7 @@ export default function Avatar({
 }: AvatarProps) {
   return (
     <div
-      className={`${sizes[size]} rounded-full flex items-center justify-center font-bold flex-shrink-0`}
+      className={`${sizes[size]} rounded-full flex items-center justify-center font-bold .flex-shrink-0`}
       style={{ background: color, color: textColor }}
     >
       {initials}
