@@ -117,7 +117,7 @@ export default function DashboardPage() {
               return (
                 <div key={i} className="flex items-center gap-3 py-2 border-b border-white/5 last:border-0">
                   <div
-                    className="w-4 h-4 rounded flex items-center justify-center .flex-shrink-0 border"
+                    className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0 border"
                     style={task.status === "done"
                       ? { background: "#1D9E75", borderColor: "#1D9E75" }
                       : { borderColor: "rgba(255,255,255,0.2)" }
@@ -146,7 +146,7 @@ export default function DashboardPage() {
             {schedules.map((s, i) => (
               <div key={i} className="flex items-center gap-3">
                 <span className="text-xs text-base-content/40 w-10">{s.time}</span>
-                <div className="w-1 h-10 rounded-full .flex-shrink-0" style={{ background: s.color }}></div>
+                <div className="w-1 h-10 rounded-full flex-shrink-0" style={{ background: s.color }}></div>
                 <div>
                   <p className="text-sm font-medium text-white">{s.title}</p>
                   <p className="text-xs text-base-content/50">{s.members}</p>

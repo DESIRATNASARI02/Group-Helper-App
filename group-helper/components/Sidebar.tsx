@@ -108,7 +108,7 @@ export default function Sidebar() {
       <div className="p-3 border-t border-base-300">
         <div className="flex items-center gap-2">
           <div
-            className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold .flex-shrink-0"
+            className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
             style={{
               background: user?.avatarColor || "#CECBF6",
               color: "#3C3489",
