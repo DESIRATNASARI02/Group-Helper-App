@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
-    "daisyui": "^5.5.23",
     "jsonwebtoken": "^9.0.3",
     "mongodb": "^7.3.0",
     "mongoose": "^9.7.1",
@@ -25,6 +24,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "daisyui": "^5.5.23",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
     "tailwindcss": "^4",
