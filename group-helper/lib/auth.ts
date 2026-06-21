@@ -1,7 +1,21 @@
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
 
-export async function getCurrentUser() {
+export type JwtPayload = {
+    id: string;
+    email: string;
+    name: string;
+};
+
+export function verifyToken(token: string): JwtPayload | null {
+    try {
+        return jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
+    } catch {
+        return null;
+    }
+}
+
+export async function getCurrentUser(): Promise<JwtPayload | null> {
     const cookieStore = await cookies();
 
     const token = cookieStore.get("token")?.value;
@@ -10,14 +24,5 @@ export async function getCurrentUser() {
         return null;
     }
 
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-            id: string;
-            email: string;
-            name: string;
-        };
-        return decoded;
-    } catch {
-        return null;
-    }
+    return verifyToken(token);
 }

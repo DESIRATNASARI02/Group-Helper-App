@@ -16,7 +16,7 @@ export default function ChatInput({ value, onChange, onSend }: ChatInputProps) {
 
   return (
     <div
-      className="p-4 border-t border-white/10 .flex-shrink-0"
+      className="p-4 border-t border-white/10 flex-shrink-0"
       style={{ background: "#1a1a2e" }}
     >
       <div

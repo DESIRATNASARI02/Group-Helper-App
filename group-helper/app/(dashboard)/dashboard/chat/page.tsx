@@ -138,7 +138,7 @@ export default function ChatPage() {
 
       {/* Channel List */}
       <div
-        className="w-52 flex flex-col border-r border-white/10 .flex-shrink-0"
+        className="w-52 flex flex-col border-r border-white/10 flex-shrink-0"
         style={{ background: "#151528" }}
       >
         <div className="p-4 border-b border-white/10">
@@ -163,7 +163,7 @@ export default function ChatPage() {
 
         {/* Topbar */}
         <div
-          className="p-4 border-b border-white/10 flex items-center justify-between .flex-shrink-0"
+          className="p-4 border-b border-white/10 flex items-center justify-between flex-shrink-0"
           style={{ background: "#1a1a2e" }}
         >
           <div className="flex items-center gap-3">

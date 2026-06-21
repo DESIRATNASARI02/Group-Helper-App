@@ -153,7 +153,7 @@ export default function NotesPage() {
 
       {/* Notes Sidebar */}
       <div
-        className="w-72 flex flex-col border-r border-white/10 .flex-shrink-0"
+        className="w-72 flex flex-col border-r border-white/10 flex-shrink-0"
         style={{ background: "#151528" }}
       >
         <NotesFilter
