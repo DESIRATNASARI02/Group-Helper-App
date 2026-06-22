@@ -167,13 +167,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="divider text-sm text-base-content/40">atau</div>
-
-          <button className="btn btn-outline w-full gap-2 hover:bg-base-200">
-            <span className="font-bold text-red-500">G</span>
-            Lanjutkan dengan Google
-          </button>
-
           <p className="text-center text-sm text-base-content/60 mt-6">
             Belum punya akun?{" "}
             <Link href="/register" className="font-semibold hover:underline" style={{ color: "#6C63FF" }}>
