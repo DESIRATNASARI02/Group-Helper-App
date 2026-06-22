@@ -71,8 +71,15 @@ export async function POST(req: NextRequest) {
 
         const body = await req.json();
 
-        const { groupId, title, description, startTime, endTime, location } =
-            body;
+        const {
+            groupId,
+            title,
+            description,
+            type,
+            startTime,
+            endTime,
+            location,
+        } = body;
 
         if (!groupId || !title || !startTime || !endTime) {
             return NextResponse.json(
@@ -101,6 +108,7 @@ export async function POST(req: NextRequest) {
             groupId,
             title,
             description,
+            type,
             startTime,
             endTime,
             location,
