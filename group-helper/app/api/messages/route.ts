@@ -4,6 +4,7 @@ import { connectDB } from "@/lib/mongodb";
 import Group from "@/models/Group";
 import Message from "@/models/Message";
 import { getCurrentUser } from "@/lib/auth";
+import { pusher } from "@/lib/pusher";
 
 export async function GET(req: NextRequest) {
     try {
@@ -117,6 +118,11 @@ export async function POST(req: NextRequest) {
         const populatedMessage = await Message.findById(message._id).populate(
             "senderId",
             "name email",
+        );
+        await pusher.trigger(
+            `group-${groupId}`,
+            "new-message",
+            populatedMessage,
         );
 
         return NextResponse.json(
