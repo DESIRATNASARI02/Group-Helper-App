@@ -36,10 +36,15 @@ const initialMessages: Message[] = [
     initials: "🤖",
     color: "#6C63FF",
     textColor: "white",
-    message: "Reminder: GC02 deadline tomorrow at 18:00!",
+    message: "Upcoming deadlines!",
     time: "09:17",
     isMe: false,
     isBot: true,
+    reminders: [
+      { title: "GC02 Final Submission", date: "Jun 18, 2026", time: "18:00", priority: "high" },
+      { title: "Live Code Exam", date: "Jun 19, 2026", time: "09:00", priority: "high" },
+      { title: "Study Session Tonight", date: "Jun 20, 2026", time: "20:00", priority: "medium" },
+    ],
   },
   {
     id: "4",
@@ -109,10 +114,15 @@ export default function ChatPage() {
             initials: "🤖",
             color: "#6C63FF",
             textColor: "white",
-            message: "📋 Upcoming deadlines:\n• GC02 submission — Jun 18, 18:00\n• Live code exam — Jun 19, 09:00\n• Study session tonight — 20:00",
+            message: "Upcoming deadlines!",
             time: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }),
             isMe: false,
             isBot: true,
+            reminders: [
+              { title: "GC02 Final Submission", date: "Jun 18, 2026", time: "18:00", priority: "high" },
+              { title: "Live Code Exam", date: "Jun 19, 2026", time: "09:00", priority: "high" },
+              { title: "Study Session Tonight", date: "Jun 20, 2026", time: "20:00", priority: "medium" },
+            ],
           },
         ]);
       }, 1000);
@@ -123,7 +133,6 @@ export default function ChatPage() {
     setLoadingSummary(true);
     setSummary("");
     try {
-      // nanti connect ke /api/chat/summary dengan Gemini
       await new Promise((r) => setTimeout(r, 1500));
       setSummary(
         "📌 Chat Summary:\n• Firhan asked about auth branch push status\n• Desi confirmed PR is ready for review\n• Bot reminded about GC02 deadline tomorrow at 18:00\n• Aziz asked if tonight's study session is still on"

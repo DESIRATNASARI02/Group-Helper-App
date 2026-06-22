@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useGroup } from "@/lib/context/GroupContext";
 
 interface User {
   _id: string;
@@ -23,9 +24,22 @@ const navItems = [
   { href: "/dashboard/settings", icon: "⚙️", label: "Settings" },
 ];
 
+const topicColors: Record<string, string> = {
+  "MongoDB": "#1D9E75",
+  "Next.js": "#6C63FF",
+  "React": "#61DAFB",
+  "TypeScript": "#3178C6",
+  "Node.js": "#68A063",
+  "default": "#EF9F27",
+};
+
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { activeGroup, groups, setActiveGroup } = useGroup();
   const [user, setUser] = useState<User | null>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -38,6 +52,16 @@ export default function Sidebar() {
     fetchUser();
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const getInitials = (name: string) => {
     return name
       .split(" ")
@@ -46,6 +70,16 @@ export default function Sidebar() {
       .toUpperCase()
       .slice(0, 2);
   };
+
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.refresh();
+    router.push("/login");
+  };
+
+  const groupColor = activeGroup
+    ? topicColors[activeGroup.topic] || topicColors["default"]
+    : "#6C63FF";
 
   return (
     <aside
@@ -67,19 +101,76 @@ export default function Sidebar() {
       </div>
 
       {/* Group Selector */}
-      <div className="p-3 border-b border-base-300">
+      <div className="p-3 border-b border-base-300 relative" ref={dropdownRef}>
         <p className="text-xs text-base-content/40 uppercase tracking-wider mb-2">
-          My Groups
+          Active Group
         </p>
-        <Link href="/groups">
+        <div
+          className="flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+          style={{ background: "rgba(108,99,255,0.2)" }}
+          onClick={() => setShowDropdown(!showDropdown)}
+        >
+          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: groupColor }}></div>
+          <span className="text-sm text-white truncate flex-1">
+            {activeGroup ? activeGroup.name : "Select Group"}
+          </span>
+          <span className="text-base-content/40 text-xs">{showDropdown ? "▲" : "▼"}</span>
+        </div>
+
+        {/* Dropdown */}
+        {showDropdown && (
           <div
-            className="flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
-            style={{ background: "rgba(108,99,255,0.2)" }}
+            className="absolute left-3 right-3 top-full mt-1 rounded-xl border border-white/10 overflow-hidden z-50"
+            style={{ background: "#1e1e3a" }}
           >
-            <div className="w-2 h-2 rounded-full" style={{ background: "#6C63FF" }}></div>
-            <span className="text-sm text-white">Select Group</span>
+            {groups.length === 0 ? (
+              <div className="p-3 text-center">
+                <p className="text-xs text-base-content/40">No groups yet</p>
+                <Link
+                  href="/groups"
+                  className="text-xs mt-1 block"
+                  style={{ color: "#6C63FF" }}
+                  onClick={() => setShowDropdown(false)}
+                >
+                  Join or create a group
+                </Link>
+              </div>
+            ) : (
+              <>
+                {groups.map((group) => {
+                  const color = topicColors[group.topic] || topicColors["default"];
+                  const isActive = activeGroup?._id === group._id;
+                  return (
+                    <button
+                      key={group._id}
+                      onClick={() => {
+                        setActiveGroup(group);
+                        setShowDropdown(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-white/5 transition-all"
+                    >
+                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }}></div>
+                      <span className={`text-sm truncate flex-1 ${isActive ? "text-white font-medium" : "text-base-content/60"}`}>
+                        {group.name}
+                      </span>
+                      {isActive && <span className="text-xs" style={{ color: "#6C63FF" }}>✓</span>}
+                    </button>
+                  );
+                })}
+                <div className="border-t border-white/10">
+                  <Link
+                    href="/groups"
+                    className="flex items-center gap-2 px-3 py-2 text-xs hover:bg-white/5 transition-all"
+                    style={{ color: "#6C63FF" }}
+                    onClick={() => setShowDropdown(false)}
+                  >
+                    + Manage Groups
+                  </Link>
+                </div>
+              </>
+            )}
           </div>
-        </Link>
+        )}
       </div>
 
       {/* Nav Items */}
@@ -116,12 +207,19 @@ export default function Sidebar() {
           >
             {user ? getInitials(user.name) : ".."}
           </div>
-          <div>
+          <div className="flex-1">
             <p className="text-xs font-medium text-white">
               {user ? user.name : "Loading..."}
             </p>
             <p className="text-xs text-base-content/40">Member</p>
           </div>
+          <button
+            onClick={handleLogout}
+            className="text-base-content/30 hover:text-error transition-colors text-sm"
+            title="Logout"
+          >
+            🚪
+          </button>
         </div>
       </div>
     </aside>
