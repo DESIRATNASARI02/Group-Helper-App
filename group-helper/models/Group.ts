@@ -6,33 +6,35 @@ const GroupSchema = new Schema(
             type: String,
             required: true,
         },
-
         topic: {
             type: String,
             required: true,
         },
-
         description: {
             type: String,
             default: "",
         },
-
         ownerId: {
             type: Schema.Types.ObjectId,
             ref: "User",
             required: true,
         },
-
         members: [
             {
                 type: Schema.Types.ObjectId,
                 ref: "User",
             },
         ],
+        isPublic: {
+            type: Boolean,
+            default: true,
+        },
     },
     {
         timestamps: true,
     },
 );
 
-export default models.Group || model("Group", GroupSchema);
+const Group = models.Group || model("Group", GroupSchema);
+
+export default Group;

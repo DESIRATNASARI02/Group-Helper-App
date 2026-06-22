@@ -338,13 +338,6 @@ export default function RegisterPage() {
             </button>
           </form>
 
-          <div className="divider text-sm text-base-content/40">atau</div>
-
-          <button className="btn btn-outline w-full gap-2">
-            <span className="font-bold text-red-500">G</span>
-            Daftar dengan Google
-          </button>
-
           <p className="text-center text-sm text-base-content/60 mt-6">
             Sudah punya akun?{" "}
             <Link href="/login" className="font-semibold hover:underline" style={{ color: "#6C63FF" }}>
