@@ -12,6 +12,7 @@
     "bcryptjs": "^3.0.3",
     "daisyui": "^5.5.23",
     "jsonwebtoken": "^9.0.3",
+    "lucide-react": "^1.21.0",
     "mongodb": "^7.3.0",
     "mongoose": "^9.7.1",
     "next": "16.2.9",

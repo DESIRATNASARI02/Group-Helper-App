@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import Sidebar from "@/components/Sidebar";
+import { GroupProvider } from "@/lib/context/GroupContext";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -7,11 +8,13 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
-    <div className="flex min-h-screen" data-theme="night">
-      <Sidebar />
-      <main className="flex-1 overflow-y-auto">
-        {children}
-      </main>
-    </div>
+    <GroupProvider>
+      <div className="flex min-h-screen" data-theme="night">
+        <Sidebar />
+        <main className="flex-1 overflow-y-auto">
+          {children}
+        </main>
+      </div>
+    </GroupProvider>
   );
 }
