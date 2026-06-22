@@ -70,19 +70,15 @@ export async function POST(req: NextRequest) {
         const model = genAI.getGenerativeModel({
             model: "gemini-2.5-flash",
         });
-
         const result = await model.generateContent(`
-      Summarize the following study group discussion.
-
-      Include:
-      - Main topics discussed
-      - Important decisions
-      - Action items / tasks
-
-      Discussion:
-
-      ${conversation}
-    `);
+        Rangkum diskusi kelompok belajar berikut dalam Bahasa Indonesia.
+        Sertakan:
+        - Topik utama yang dibahas
+        - Keputusan penting
+        - Tugas / action items
+        Diskusi:
+        ${conversation}
+        `);
 
         const summary = result.response.text();
 

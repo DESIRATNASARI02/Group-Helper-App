@@ -1,165 +1,149 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Topbar from "@/components/ui/Topbar";
 import Modal from "@/components/ui/Modal";
 import KanbanColumn from "@/components/tasks/KanbanColumn";
 import { Task, TaskStatus } from "@/components/tasks/TaskCard";
-
-const initialTasks: Task[] = [
-  {
-    id: "1",
-    title: "Setup login & register page",
-    status: "todo",
-    priority: "medium",
-    assignee: "DR",
-    assigneeColor: "#CECBF6",
-    assigneeTextColor: "#3C3489",
-    due: "Jun 18",
-  },
-  {
-    id: "2",
-    title: "Integrate reminder bot to chat",
-    status: "todo",
-    priority: "urgent",
-    assignee: "FK",
-    assigneeColor: "#9FE1CB",
-    assigneeTextColor: "#085041",
-    due: "Jun 17",
-  },
-  {
-    id: "3",
-    title: "Implement JWT auth in Next.js",
-    description: "Create middleware to protect routes and handle token refresh.",
-    status: "in-progress",
-    priority: "high",
-    assignee: "DR",
-    assigneeColor: "#CECBF6",
-    assigneeTextColor: "#3C3489",
-    due: "Jun 17",
-  },
-  {
-    id: "4",
-    title: "Design MongoDB schema",
-    status: "in-progress",
-    priority: "medium",
-    assignee: "FK",
-    assigneeColor: "#9FE1CB",
-    assigneeTextColor: "#085041",
-    due: "Jun 16",
-  },
-  {
-    id: "5",
-    title: "UI Dashboard & Sidebar",
-    description: "Waiting for Captain review before merge to main.",
-    status: "review",
-    priority: "medium",
-    assignee: "DR",
-    assigneeColor: "#CECBF6",
-    assigneeTextColor: "#3C3489",
-    due: "Jun 16",
-  },
-  {
-    id: "6",
-    title: "Setup Next.js project",
-    status: "done",
-    priority: "low",
-    assignee: "FK",
-    assigneeColor: "#9FE1CB",
-    assigneeTextColor: "#085041",
-    due: "Jun 14",
-  },
-];
+import { useGroup } from "@/lib/context/GroupContext";
 
 const columns = [
-  { id: "todo" as TaskStatus, label: "Todo", color: "#888780", bg: "#F1EFE820" },
-  { id: "in-progress" as TaskStatus, label: "In Progress", color: "#EF9F27", bg: "#FAEEDA20" },
-  { id: "review" as TaskStatus, label: "Review", color: "#378ADD", bg: "#E6F1FB20" },
-  { id: "done" as TaskStatus, label: "Done", color: "#1D9E75", bg: "#E1F5EE20" },
+  { id: "pending" as TaskStatus, label: "Pending", color: "#888780", bg: "#F1EFE820" },
+  { id: "in_progress" as TaskStatus, label: "In Progress", color: "#EF9F27", bg: "#FAEEDA20" },
+  { id: "completed" as TaskStatus, label: "Completed", color: "#1D9E75", bg: "#E1F5EE20" },
 ];
 
 export default function TasksPage() {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const { activeGroup } = useGroup();
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [newTask, setNewTask] = useState({
     title: "",
     description: "",
-    priority: "medium",
-    due: "",
+    deadline: "",
   });
+
+  useEffect(() => {
+    if (activeGroup) fetchTasks();
+  }, [activeGroup]);
+
+  const fetchTasks = async () => {
+    if (!activeGroup) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/tasks?groupId=${activeGroup._id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setTasks(data);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getTasksByStatus = (status: TaskStatus) =>
     tasks.filter((t) => t.status === status);
 
-  const handleMove = (taskId: string, newStatus: TaskStatus) => {
+  const handleMove = async (taskId: string, newStatus: TaskStatus) => {
     setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t))
+      prev.map((t) => (t._id === taskId ? { ...t, status: newStatus } : t))
     );
+    try {
+      await fetch(`/api/tasks/${taskId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+    } catch (err) {
+      console.error(err);
+      fetchTasks();
+    }
   };
 
-  const handleAddTask = () => {
-    if (!newTask.title) return;
-    const task: Task = {
-      id: Date.now().toString(),
-      title: newTask.title,
-      description: newTask.description,
-      status: "todo",
-      priority: newTask.priority as Task["priority"],
-      assignee: "DR",
-      assigneeColor: "#CECBF6",
-      assigneeTextColor: "#3C3489",
-      due: newTask.due,
-    };
-    setTasks((prev) => [...prev, task]);
-    setNewTask({ title: "", description: "", priority: "medium", due: "" });
-    setShowModal(false);
+  const handleDelete = async (taskId: string) => {
+    setTasks((prev) => prev.filter((t) => t._id !== taskId));
+    try {
+      await fetch(`/api/tasks/${taskId}`, { method: "DELETE" });
+    } catch (err) {
+      console.error(err);
+      fetchTasks();
+    }
   };
+
+  const handleAddTask = async () => {
+    if (!newTask.title || !activeGroup) return;
+    try {
+      const res = await fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          groupId: activeGroup._id,
+          title: newTask.title,
+          description: newTask.description,
+          deadline: newTask.deadline || undefined,
+        }),
+      });
+      if (res.ok) {
+        fetchTasks();
+        setNewTask({ title: "", description: "", deadline: "" });
+        setShowModal(false);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  if (!activeGroup) {
+    return (
+      <div className="p-6 flex flex-col items-center justify-center h-96 gap-4" data-theme="night">
+        <p className="text-4xl">👥</p>
+        <p className="text-white font-medium">No active group selected</p>
+        <p className="text-base-content/50 text-sm">Select a group from the sidebar to view tasks</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 flex flex-col gap-6" data-theme="night">
 
       <Topbar
         title="Tasks"
-        subtitle={`Hacktiv8 Phase 3 · ${tasks.length} tasks`}
+        subtitle={`${activeGroup.name} · ${tasks.length} tasks`}
         actions={
-          <div className="flex items-center gap-3">
-            <div className="flex border border-white/10 rounded-lg overflow-hidden">
-              <button
-                className="px-3 py-1.5 text-xs font-medium text-white"
-                style={{ background: "rgba(108,99,255,0.3)" }}
-              >
-                🗂 Kanban
-              </button>
-              <button className="px-3 py-1.5 text-xs text-base-content/50 hover:text-white">
-                📋 List
-              </button>
-            </div>
-            <button
-              className="btn btn-sm text-white font-medium"
-              style={{ background: "#6C63FF" }}
-              onClick={() => setShowModal(true)}
-            >
-              + Add Task
-            </button>
-          </div>
+          <button
+            className="btn btn-sm text-white font-medium"
+            style={{ background: "#6C63FF" }}
+            onClick={() => setShowModal(true)}
+          >
+            + Add Task
+          </button>
         }
       />
 
-      {/* Kanban Board */}
-      <div className="grid grid-cols-4 gap-4 overflow-x-auto">
-        {columns.map((col) => (
-          <KanbanColumn
-            key={col.id}
-            id={col.id}
-            label={col.label}
-            color={col.color}
-            bg={col.bg}
-            tasks={getTasksByStatus(col.id)}
-            onMove={handleMove}
-            onAddTask={() => setShowModal(true)}
-          />
-        ))}
-      </div>
+      {loading ? (
+        <div className="flex justify-center py-20">
+          <span className="loading loading-spinner loading-lg" style={{ color: "#6C63FF" }}></span>
+        </div>
+      ) : (
+        <div className="grid grid-cols-3 gap-4 overflow-x-auto">
+          {columns.map((col) => (
+            <KanbanColumn
+              key={col.id}
+              id={col.id}
+              label={col.label}
+              color={col.color}
+              bg={col.bg}
+              tasks={getTasksByStatus(col.id)}
+              onMove={handleMove}
+              onDelete={handleDelete}
+              onAddTask={() => setShowModal(true)}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Modal Add Task */}
       <Modal
@@ -193,33 +177,17 @@ export default function TasksPage() {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text text-white">Priority</span>
-            </label>
-            <select
-              className="select select-bordered w-full"
-              value={newTask.priority}
-              onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
-            >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-              <option value="urgent">Urgent</option>
-            </select>
-          </div>
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text text-white">Due Date</span>
-            </label>
-            <input
-              type="date"
-              className="input input-bordered w-full"
-              value={newTask.due}
-              onChange={(e) => setNewTask({ ...newTask, due: e.target.value })}
-            />
-          </div>
+        <div className="form-control">
+          <label className="label">
+            <span className="label-text text-white">Deadline</span>
+            <span className="label-text-alt text-base-content/40">Optional</span>
+          </label>
+          <input
+            type="date"
+            className="input input-bordered w-full"
+            value={newTask.deadline}
+            onChange={(e) => setNewTask({ ...newTask, deadline: e.target.value })}
+          />
         </div>
 
         <div className="flex gap-3 mt-2">

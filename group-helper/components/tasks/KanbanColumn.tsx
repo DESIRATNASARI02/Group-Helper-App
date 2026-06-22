@@ -9,6 +9,7 @@ interface KanbanColumnProps {
   bg: string;
   tasks: Task[];
   onMove: (id: string, status: TaskStatus) => void;
+  onDelete: (id: string) => void;
   onAddTask: () => void;
 }
 
@@ -18,6 +19,7 @@ export default function KanbanColumn({
   bg,
   tasks,
   onMove,
+  onDelete,
   onAddTask,
 }: KanbanColumnProps) {
   return (
@@ -40,7 +42,7 @@ export default function KanbanColumn({
       {/* Cards */}
       <div className="flex flex-col gap-2 min-h-32">
         {tasks.map((task) => (
-          <TaskCard key={task.id} task={task} onMove={onMove} />
+          <TaskCard key={task._id} task={task} onMove={onMove} onDelete={onDelete} />
         ))}
 
         {/* Add Button */}
