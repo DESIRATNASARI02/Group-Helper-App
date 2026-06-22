@@ -34,8 +34,15 @@ export default function LoginPage() {
         setError(data.message);
         return;
       }
+      
+      const groupRes = await fetch("/api/groups/my");
+      const groupData = await groupRes.json();
 
-      router.push("/dashboard");
+      if (groupData.groups?.length > 0) {
+        router.push("/dashboard"); 
+      } else {
+        router.push("/groups"); 
+      }
 
     } catch (err) {
       setError("Something went wrong. Please try again.");
@@ -159,13 +166,6 @@ export default function LoginPage() {
               {loading ? "Memproses..." : "Masuk"}
             </button>
           </form>
-
-          <div className="divider text-sm text-base-content/40">atau</div>
-
-          <button className="btn btn-outline w-full gap-2 hover:bg-base-200">
-            <span className="font-bold text-red-500">G</span>
-            Lanjutkan dengan Google
-          </button>
 
           <p className="text-center text-sm text-base-content/60 mt-6">
             Belum punya akun?{" "}
