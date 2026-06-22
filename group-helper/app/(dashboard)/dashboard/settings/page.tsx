@@ -4,12 +4,10 @@ import { useState, useEffect } from "react";
 import Topbar from "@/components/ui/Topbar";
 import ProfileSettings from "@/components/settings/ProfileSettings";
 import GroupSettings from "@/components/settings/GroupSettings";
-import NotificationSettings from "@/components/settings/NotificationSettings";
 
 const tabs = [
   { id: "profile", label: "👤 Profile" },
   { id: "group", label: "👥 Group" },
-  { id: "notifications", label: "🔔 Notifications" },
 ];
 
 interface User {
@@ -69,7 +67,6 @@ export default function SettingsPage() {
           />
         )}
         {activeTab === "group" && <GroupSettings />}
-        {activeTab === "notifications" && <NotificationSettings />}
       </div>
 
     </div>

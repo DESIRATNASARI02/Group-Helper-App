@@ -8,30 +8,23 @@ export async function POST(req: NextRequest) {
   try {
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json(
-        { message: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
     const { content } = await req.json();
-
     if (!content) {
-      return NextResponse.json(
-        { message: "content is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ message: "content is required" }, { status: 400 });
     }
 
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const result = await model.generateContent(`
-    Rangkum HANYA isi catatan berikut dalam Bahasa Indonesia.
-    Jangan tambahkan informasi dari luar catatan.
-    Jika catatan terlalu pendek, cukup tulis "Catatan terlalu singkat untuk dirangkum."
-    
-    Catatan:
-    ${content}
+      Rangkum HANYA isi catatan berikut dalam Bahasa Indonesia.
+      Jangan tambahkan informasi dari luar catatan.
+      Jika catatan terlalu pendek, cukup tulis "Catatan terlalu singkat untuk dirangkum."
+      
+      Catatan:
+      ${content}
     `);
 
     const summary = result.response.text();
@@ -39,9 +32,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ summary });
   } catch (error) {
     console.error(error);
-    return NextResponse.json(
-      { message: "Internal Server Error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
   }
 }

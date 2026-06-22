@@ -8,16 +8,11 @@ import AISummary from "@/components/chat/AISummary";
 import { useGroup } from "@/lib/context/GroupContext";
 import { pusherClient } from "@/lib/pusher-client";
 
-const onlineMembers: OnlineMember[] = [
-  { initials: "DR", color: "#CECBF6", textColor: "#3C3489", name: "Desi (you)", online: true },
-  { initials: "FK", color: "#9FE1CB", textColor: "#085041", name: "Firhan", online: true },
-  { initials: "AZ", color: "#F5C4B3", textColor: "#712B13", name: "Aziz", online: false },
-];
-
 export default function ChatPage() {
   const { activeGroup } = useGroup();
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [groupMembers, setGroupMembers] = useState<OnlineMember[]>([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [summary, setSummary] = useState("");
@@ -25,7 +20,7 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // useEffect 1 - fetch current user
+  // Fetch current user
   useEffect(() => {
     const fetchCurrentUser = async () => {
       const res = await fetch("/api/auth/me");
@@ -37,7 +32,27 @@ export default function ChatPage() {
     fetchCurrentUser();
   }, []);
 
-  // useEffect 2 - pusher + fetch messages
+  // Fetch group members
+  useEffect(() => {
+    if (!activeGroup) return;
+    const fetchMembers = async () => {
+      const res = await fetch(`/api/groups/${activeGroup._id}/members`);
+      if (res.ok) {
+        const data = await res.json();
+        const formatted = data.members?.map((m: any) => ({
+          initials: m.name?.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2) || "??",
+          color: m.avatarColor || "#CECBF6",
+          textColor: "#3C3489",
+          name: m.name || "Unknown",
+          online: true,
+        })) || [];
+        setGroupMembers(formatted);
+      }
+    };
+    fetchMembers();
+  }, [activeGroup]);
+
+  // Pusher + fetch messages
   useEffect(() => {
     if (!activeGroup) return;
 
@@ -106,7 +121,7 @@ export default function ChatPage() {
     };
   }, [activeGroup, currentUserId]);
 
-  // useEffect 3 - scroll to bottom
+  // Scroll to bottom
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -251,7 +266,7 @@ export default function ChatPage() {
         </div>
 
         {/* Online Members */}
-        <OnlineMembers members={onlineMembers} />
+        <OnlineMembers members={groupMembers} />
       </div>
 
       {/* Chat Main */}

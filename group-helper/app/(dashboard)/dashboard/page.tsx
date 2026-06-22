@@ -3,64 +3,59 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Topbar from "@/components/ui/Topbar";
-import Card from "@/components/ui/Card";
-import Avatar from "@/components/ui/Avatar";
-import Badge from "@/components/ui/Badge";
+import StatsSection from "@/components/dashboard/StatsSection";
+import TasksSection from "@/components/dashboard/TasksSection";
+import ScheduleSection from "@/components/dashboard/ScheduleSection";
+import ChatSection from "@/components/dashboard/ChatSection";
+import NotesSection from "@/components/dashboard/NotesSection";
+import MembersSection from "@/components/dashboard/MembersSection";
+import { useGroup } from "@/lib/context/GroupContext";
 
 interface User {
   _id: string;
   name: string;
   email: string;
-  avatarColor?: string;
 }
 
-const stats = [
-  { label: "Total Tasks", value: "24", hint: "8 completed today", hintColor: "text-success", icon: "✅" },
-  { label: "Members", value: "6", hint: "All active", hintColor: "text-success", icon: "👥" },
-  { label: "Notes", value: "12", hint: "3 updated today", hintColor: "text-base-content/50", icon: "📝" },
-  { label: "Next Session", value: "20:00", hint: "Tonight", hintColor: "text-error", icon: "📅" },
-];
+interface Task {
+  _id: string;
+  title: string;
+  status: string;
+}
 
-const tasks = [
-  { title: "Setup Next.js project", status: "done", due: "Jun 14", assignee: "DR", assigneeColor: "#CECBF6", assigneeTextColor: "#3C3489" },
-  { title: "Implement JWT auth", status: "progress", due: "Jun 17", assignee: "DR", assigneeColor: "#CECBF6", assigneeTextColor: "#3C3489" },
-  { title: "Deploy to Vercel", status: "todo", due: "Jun 18", assignee: "FK", assigneeColor: "#9FE1CB", assigneeTextColor: "#085041" },
-  { title: "GC02 final submission", status: "urgent", due: "Jun 18", assignee: "DR", assigneeColor: "#CECBF6", assigneeTextColor: "#3C3489" },
-];
+interface Note {
+  _id: string;
+  title: string;
+  content: string;
+  createdBy: { name: string };
+  updatedAt: string;
+}
 
-const schedules = [
-  { time: "09:00", title: "Next.js App Router", members: "All members", color: "#6C63FF" },
-  { time: "14:00", title: "MongoDB review", members: "Desi, Firhan", color: "#1D9E75" },
-  { time: "20:00", title: "Live code prep", members: "All members", color: "#D85A30" },
-];
+interface Schedule {
+  _id: string;
+  title: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  members: string;
+  type: string;
+}
 
-const chats = [
-  { name: "Firhan", initials: "FK", color: "#9FE1CB", textColor: "#085041", message: "Have you pushed the auth branch yet?", isMe: false },
-  { name: "You", initials: "DR", color: "#CECBF6", textColor: "#3C3489", message: "Yes, check the PR 🙏", isMe: true },
-  { name: "Bot", initials: "🤖", color: "#6C63FF", textColor: "white", message: "Reminder: GC02 deadline tomorrow 18:00!", isMe: false },
-];
-
-const notes = [
-  { title: "SSR vs CSR in Next.js", preview: "Server components render on server...", author: "Desi", time: "2h ago", color: "#EF9F27" },
-  { title: "MongoDB Atlas setup", preview: "Connection string format...", author: "Firhan", time: "5h ago", color: "#1D9E75" },
-];
-
-const members = [
-  { name: "Desi Ratna", initials: "DR", color: "#CECBF6", textColor: "#3C3489", role: "Captain", online: true },
-  { name: "Firhan Kafi", initials: "FK", color: "#9FE1CB", textColor: "#085041", role: "Member", online: true },
-  { name: "Aziz", initials: "AZ", color: "#F5C4B3", textColor: "#712B13", role: "Member", online: true },
-  { name: "Rahma", initials: "RA", color: "#FAC775", textColor: "#633806", role: "Member", online: false },
-];
-
-const statusBadgeConfig: Record<string, { label: string; color: string; bg: string }> = {
-  done: { label: "Done", color: "white", bg: "#1D9E75" },
-  progress: { label: "In Progress", color: "white", bg: "#EF9F27" },
-  todo: { label: "Todo", color: "#534AB7", bg: "#EEEDFE" },
-  urgent: { label: "Urgent", color: "white", bg: "#E24B4A" },
-};
+interface Message {
+  _id: string;
+  content: string;
+  senderId: { _id: string; name: string };
+  createdAt: string;
+}
 
 export default function DashboardPage() {
+  const { activeGroup } = useGroup();
   const [user, setUser] = useState<User | null>(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -73,161 +68,98 @@ export default function DashboardPage() {
     fetchUser();
   }, []);
 
+  useEffect(() => {
+    if (!activeGroup) return;
+    fetchAllData();
+  }, [activeGroup]);
+
+  const fetchAllData = async () => {
+    if (!activeGroup) return;
+    setLoading(true);
+    try {
+      const [tasksRes, notesRes, schedulesRes, messagesRes] = await Promise.all([
+        fetch(`/api/tasks?groupId=${activeGroup._id}`),
+        fetch(`/api/notes?groupId=${activeGroup._id}`),
+        fetch(`/api/schedules?groupId=${activeGroup._id}`),
+        fetch(`/api/messages?groupId=${activeGroup._id}`),
+      ]);
+      if (tasksRes.ok) setTasks(await tasksRes.json());
+      if (notesRes.ok) setNotes(await notesRes.json());
+      if (schedulesRes.ok) setSchedules(await schedulesRes.json());
+      if (messagesRes.ok) setMessages(await messagesRes.json());
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const completedTasks = tasks.filter((t) => t.status === "completed").length;
+  const members = activeGroup?.members || [];
+
+  const getNextSession = () => {
+    if (schedules.length === 0) return null;
+    const todayStr = new Date().toISOString().split("T")[0];
+    const upcoming = schedules
+      .filter((s) => s.date >= todayStr)
+      .sort((a, b) => {
+        if (a.date !== b.date) return a.date.localeCompare(b.date);
+        return a.startTime.localeCompare(b.startTime);
+      });
+    return upcoming[0] || null;
+  };
+
+  if (!activeGroup) {
+    return (
+      <div className="p-6 flex flex-col items-center justify-center h-96 gap-4" data-theme="night">
+        <p className="text-4xl">👥</p>
+        <p className="text-white font-medium">No active group selected</p>
+        <p className="text-base-content/50 text-sm">Select a group from the sidebar</p>
+        <Link href="/groups">
+          <button className="btn btn-sm text-white" style={{ background: "#6C63FF" }}>
+            Go to Groups
+          </button>
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 flex flex-col gap-6" data-theme="night">
 
       <Topbar
         title="Dashboard"
-        subtitle={`Hacktiv8 Phase 3 · ${user ? `Welcome back, ${user.name}!` : "Loading..."}`}
+        subtitle={`${activeGroup.name} · ${user ? `Welcome back, ${user.name}!` : "Loading..."}`}
         actions={
-          <div className="flex items-center gap-3">
-            <button className="btn btn-ghost btn-sm btn-circle text-base-content/50">🔔</button>
+          <Link href="/dashboard/tasks">
             <button className="btn btn-sm text-white font-medium" style={{ background: "#6C63FF" }}>
               + New Task
             </button>
-          </div>
+          </Link>
         }
       />
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((s, i) => (
-          <Card key={i}>
-            <p className="text-xs text-base-content/50 mb-1 flex items-center gap-1">
-              <span>{s.icon}</span> {s.label}
-            </p>
-            <p className="text-2xl font-bold text-white">{s.value}</p>
-            <p className={`text-xs mt-1 ${s.hintColor}`}>{s.hint}</p>
-          </Card>
-        ))}
-      </div>
+      <StatsSection
+        totalTasks={tasks.length}
+        completedTasks={completedTasks}
+        totalMembers={members.length}
+        totalNotes={notes.length}
+        nextSession={getNextSession()}
+      />
 
-      {/* Tasks + Schedule */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-white text-sm">✅ Shared Tasks</h2>
-            <Link href="/dashboard/tasks">
-              <span className="text-xs cursor-pointer hover:underline" style={{ color: "#6C63FF" }}>See all</span>
-            </Link>
-          </div>
-          <div className="flex flex-col gap-2">
-            {tasks.map((task, i) => {
-              const badge = statusBadgeConfig[task.status];
-              return (
-                <div key={i} className="flex items-center gap-3 py-2 border-b border-white/5 last:border-0">
-                  <div
-                    className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0 border"
-                    style={task.status === "done"
-                      ? { background: "#1D9E75", borderColor: "#1D9E75" }
-                      : { borderColor: "rgba(255,255,255,0.2)" }
-                    }
-                  >
-                    {task.status === "done" && <span className="text-white text-xs">✓</span>}
-                  </div>
-                  <span className={`flex-1 text-sm ${task.status === "done" ? "line-through text-base-content/40" : "text-white"}`}>
-                    {task.title}
-                  </span>
-                  <Badge label={badge.label} color={badge.color} bg={badge.bg} />
-                </div>
-              );
-            })}
-          </div>
-        </Card>
-
-        <Card>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-white text-sm">📅 Today's Schedule</h2>
-            <Link href="/dashboard/schedule">
-              <span className="text-xs cursor-pointer hover:underline" style={{ color: "#6C63FF" }}>Calendar</span>
-            </Link>
-          </div>
-          <div className="flex flex-col gap-3">
-            {schedules.map((s, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <span className="text-xs text-base-content/40 w-10">{s.time}</span>
-                <div className="w-1 h-10 rounded-full flex-shrink-0" style={{ background: s.color }}></div>
-                <div>
-                  <p className="text-sm font-medium text-white">{s.title}</p>
-                  <p className="text-xs text-base-content/50">{s.members}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
+        <TasksSection tasks={tasks} loading={loading} />
+        <ScheduleSection schedules={schedules} loading={loading} />
       </div>
 
-      {/* Chat + Notes + Members */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-white text-sm">💬 Recent Chat</h2>
-            <Link href="/dashboard/chat">
-              <span className="text-xs cursor-pointer hover:underline" style={{ color: "#6C63FF" }}>Open chat</span>
-            </Link>
-          </div>
-          <div className="flex flex-col gap-3">
-            {chats.map((c, i) => (
-              <div key={i} className={`flex gap-2 items-start ${c.isMe ? "flex-row-reverse" : ""}`}>
-                <Avatar initials={c.initials} color={c.color} textColor={c.textColor} size="sm" />
-                <div className={`flex flex-col ${c.isMe ? "items-end" : "items-start"}`}>
-                  <p className="text-xs text-base-content/40 mb-1">{c.name}</p>
-                  <div
-                    className="text-xs px-3 py-2 rounded-lg text-white max-w-xs"
-                    style={{ background: c.isMe ? "#6C63FF" : "#2a2a4a" }}
-                  >
-                    {c.message}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        <Card>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-white text-sm">📝 Shared Notes</h2>
-            <Link href="/dashboard/notes">
-              <span className="text-xs cursor-pointer hover:underline" style={{ color: "#6C63FF" }}>All notes</span>
-            </Link>
-          </div>
-          <div className="flex flex-col gap-3">
-            {notes.map((n, i) => (
-              <div
-                key={i}
-                className="rounded-lg p-3"
-                style={{ background: `${n.color}15`, borderLeft: `3px solid ${n.color}` }}
-              >
-                <p className="text-sm font-medium text-white">{n.title}</p>
-                <p className="text-xs text-base-content/50 mt-1">{n.preview}</p>
-                <p className="text-xs text-base-content/30 mt-2">{n.author} · {n.time}</p>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        <Card>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-white text-sm">👥 Members</h2>
-          </div>
-          <div className="flex flex-col gap-3">
-            {members.map((m, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <div className="relative">
-                  <Avatar initials={m.initials} color={m.color} textColor={m.textColor} size="md" />
-                  <div
-                    className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-base-100"
-                    style={{ background: m.online ? "#1D9E75" : "#888" }}
-                  />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-white">{m.name}</p>
-                  <p className="text-xs text-base-content/40">{m.role}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
+        <ChatSection
+          messages={messages}
+          loading={loading}
+          currentUserId={user?._id || ""}
+        />
+        <NotesSection notes={notes} loading={loading} />
+        <MembersSection />
       </div>
 
     </div>

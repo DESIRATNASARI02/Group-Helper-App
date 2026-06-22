@@ -30,7 +30,7 @@ export default function DiscoverGroupsPage() {
       const res = await fetch("/api/groups");
       if (res.ok) {
         const data = await res.json();
-        setGroups(data.groups || []);
+        setGroups(Array.isArray(data) ? data : data.groups || []);
       }
     } catch (err) {
       console.error(err);

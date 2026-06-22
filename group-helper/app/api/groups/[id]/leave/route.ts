@@ -5,7 +5,7 @@ import { verifyToken } from "@/lib/auth";
 
 export async function POST(
     request: Request,
-    { params }: { params: { id: string } },
+    { params }: { params: Promise<{ id: string }> },
 ) {
     try {
         const token = request.headers
@@ -13,40 +13,27 @@ export async function POST(
             ?.split(";")
             .find((c) => c.trim().startsWith("token="))
             ?.split("=")[1];
-
         if (!token) {
-            return NextResponse.json(
-                { message: "Unauthorized" },
-                { status: 401 },
-            );
+            return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
         }
 
         const decoded = verifyToken(token) as { id: string };
-
         await connectDB();
 
-        const group = await Group.findById(params.id);
+        const { id } = await params;
 
+        const group = await Group.findById(id);
         if (!group) {
-            return NextResponse.json(
-                { message: "Group not found" },
-                { status: 404 },
-            );
+            return NextResponse.json({ message: "Group not found" }, { status: 404 });
         }
 
         group.members = group.members.filter(
-            (id: string) => id.toString() !== decoded.id,
+            (memberId: string) => memberId.toString() !== decoded.id,
         );
         await group.save();
 
-        return NextResponse.json(
-            { message: "Left group successfully" },
-            { status: 200 },
-        );
+        return NextResponse.json({ message: "Left group successfully" }, { status: 200 });
     } catch (error) {
-        return NextResponse.json(
-            { message: "Internal Server Error" },
-            { status: 500 },
-        );
+        return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
     }
 }

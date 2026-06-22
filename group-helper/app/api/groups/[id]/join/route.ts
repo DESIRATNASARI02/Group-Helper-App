@@ -30,14 +30,15 @@ export async function POST(
         }
         await connectDB();
 
-        const group = await Group.findById(params.id);
-
-        if (!group) {
-            return NextResponse.json(
-                { message: "Group not found" },
-                { status: 404 },
-            );
-        }
+        const { id } = await params;
+        const group = await Group.findById(id);
+console.log("Looking for group:", id, "Found:", group);
+if (!group) {
+    return NextResponse.json(
+        { message: "Group not found" },
+        { status: 404 },
+    );
+}
 
         if (group.members.includes(decoded.id)) {
             return NextResponse.json(

@@ -19,17 +19,45 @@ const avatarColors = [
 ];
 
 export default function ProfileSettings({ name, email, avatarColor }: ProfileSettingsProps) {
-  const [form, setForm] = useState({ name, email, avatarColor });
+  const [form, setForm] = useState({ name, email, avatarColor, password: "" });
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const getInitials = (n: string) =>
     n.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
 
   const handleSave = async () => {
-    // nanti connect ke /api/auth/update
-    await new Promise((r) => setTimeout(r, 500));
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    setError("");
+    setLoading(true);
+    try {
+      const body: any = {
+        name: form.name,
+        email: form.email,
+        avatarColor: form.avatarColor,
+      };
+      if (form.password) body.password = form.password;
+
+      const res = await fetch("/api/auth/update", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message);
+        return;
+      }
+
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -101,8 +129,16 @@ export default function ProfileSettings({ name, email, avatarColor }: ProfileSet
             type="password"
             placeholder="Leave blank to keep current"
             className="input input-bordered w-full"
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
           />
         </div>
+
+        {error && (
+          <div className="alert alert-error text-sm">
+            <span>{error}</span>
+          </div>
+        )}
 
         {saved && (
           <div className="alert alert-success text-sm">
@@ -112,10 +148,11 @@ export default function ProfileSettings({ name, email, avatarColor }: ProfileSet
 
         <button
           onClick={handleSave}
-          className="btn text-white font-medium w-fit"
+          className={`btn text-white font-medium w-fit ${loading ? "loading" : ""}`}
           style={{ background: "#6C63FF" }}
+          disabled={loading}
         >
-          Save Changes
+          {loading ? "Saving..." : "Save Changes"}
         </button>
       </div>
     </div>
