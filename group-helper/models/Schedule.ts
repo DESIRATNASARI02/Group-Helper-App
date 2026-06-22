@@ -17,6 +17,11 @@ const ScheduleSchema = new Schema(
             type: String,
             default: "",
         },
+        type: {
+            type: String,
+            enum: ["study", "review", "exam", "meeting"],
+            default: "study",
+        },
 
         startTime: {
             type: Date,
