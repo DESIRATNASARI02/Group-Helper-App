@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import NotesFilter from "@/components/notes/NotesFilter";
 import NotesList from "@/components/notes/NotesList";
 import NoteEditor from "@/components/notes/NoteEditor";
+import { useGroup } from "@/lib/context/GroupContext";
 
 interface Note {
+  _id?: string;
   id: string;
   title: string;
   content: string;
@@ -16,59 +18,94 @@ interface Note {
   color: string;
 }
 
-const initialNotes: Note[] = [
-  {
-    id: "1",
-    title: "SSR vs CSR in Next.js",
-    content: "Server components render on server, client components use 'use client' directive...\n\nServer-Side Rendering (SSR):\n- Components rendered on server before sent to browser\n- Better for SEO\n- Cannot use hooks like useState or useEffect\n- Default in Next.js App Router\n\nClient-Side Rendering (CSR):\n- Components rendered in browser\n- Can use React hooks\n- Add 'use client' at top of file",
-    preview: "Server components render on server, client components use 'use client' directive...",
-    author: "Desi",
-    time: "2h ago",
-    tags: ["Next.js"],
-    color: "#6C63FF",
-  },
-  {
-    id: "2",
-    title: "MongoDB Atlas Setup",
-    content: "Connection string format: mongodb+srv://user:pass@cluster...\n\nSteps:\n1. Create account at mongodb.com/atlas\n2. Create new cluster\n3. Go to Connect > Drivers\n4. Copy connection string\n5. Replace <password> with actual password\n6. Add to .env.local as MONGODB_URI",
-    preview: "Connection string format: mongodb+srv://user:pass@cluster...",
-    author: "Firhan",
-    time: "5h ago",
-    tags: ["MongoDB"],
-    color: "#1D9E75",
-  },
-  {
-    id: "3",
-    title: "JWT Auth Flow",
-    content: "How to implement middleware to protect routes with JWT...\n\n1. User login → server creates JWT token\n2. Token stored in httpOnly cookie\n3. Each request sends cookie automatically\n4. Middleware/proxy.ts verifies token\n5. If valid → allow access\n6. If invalid → redirect to login",
-    preview: "How to implement middleware to protect routes with JWT...",
-    author: "Desi",
-    time: "Yesterday",
-    tags: ["Auth"],
-    color: "#EF9F27",
-  },
-  {
-    id: "4",
-    title: "Deployment Checklist",
-    content: "Steps to deploy to Vercel:\n1. Push code to GitHub\n2. Connect repo to Vercel\n3. Add environment variables\n4. Deploy!\n\nEnvironment variables needed:\n- MONGODB_URI\n- JWT_SECRET\n- PUSHER_APP_ID\n- PUSHER_KEY\n- PUSHER_SECRET\n- GEMINI_API_KEY",
-    preview: "Steps to deploy to Vercel and setup environment variables...",
-    author: "Desi",
-    time: "2 days ago",
-    tags: ["Deploy"],
-    color: "#E24B4A",
-  },
-];
+interface User {
+  _id: string;
+  name: string;
+  email: string;
+}
 
-const allTags = ["All", "Next.js", "MongoDB", "Auth", "CSS", "Deploy"];
+const allTags = ["All", "Next.js", "MongoDB", "Auth", "CSS", "Deploy", "Chat"];
+
+const tagColors: Record<string, string> = {
+  "Next.js": "#6C63FF",
+  "MongoDB": "#1D9E75",
+  "Auth": "#EF9F27",
+  "CSS": "#888780",
+  "Deploy": "#E24B4A",
+  "Chat": "#1D9E75",
+  "default": "#6C63FF",
+};
+
+const stripHtml = (html: string) => {
+  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 80) + "...";
+};
+
+const formatTime = (date: string) => {
+  const d = new Date(date);
+  const now = new Date();
+  const diff = now.getTime() - d.getTime();
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+  if (hours < 1) return "Just now";
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 7) return `${days} days ago`;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+};
 
 export default function NotesPage() {
-  const [notes, setNotes] = useState<Note[]>(initialNotes);
+  const { activeGroup } = useGroup();
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeTag, setActiveTag] = useState("All");
   const [search, setSearch] = useState("");
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
+  const [editTags, setEditTags] = useState<string[]>(["Next.js"]);
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const res = await fetch("/api/auth/me");
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data.user);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  useEffect(() => {
+    if (activeGroup) fetchNotes();
+  }, [activeGroup]);
+
+  const fetchNotes = async () => {
+    if (!activeGroup) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/notes?groupId=${activeGroup._id}`);
+      if (res.ok) {
+        const data = await res.json();
+        const formatted: Note[] = data.map((note: any) => ({
+          _id: note._id,
+          id: note._id,
+          title: note.title,
+          content: note.content,
+          preview: stripHtml(note.content),
+          author: note.createdBy?.name || "Unknown",
+          time: formatTime(note.updatedAt),
+          tags: note.tags?.length > 0 ? note.tags : ["Next.js"],
+          color: tagColors[note.tags?.[0]] || tagColors["default"],
+        }));
+        setNotes(formatted);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filtered = notes.filter((n) => {
     const matchTag = activeTag === "All" || n.tags.includes(activeTag);
@@ -84,6 +121,7 @@ export default function NotesPage() {
       setSelectedNote(note);
       setEditTitle(note.title);
       setEditContent(note.content);
+      setEditTags(note.tags);
       setIsCreating(false);
     }
   };
@@ -92,61 +130,83 @@ export default function NotesPage() {
     setSelectedNote(null);
     setEditTitle("");
     setEditContent("");
+    setEditTags(["Next.js"]);
     setIsCreating(true);
   };
 
-  const handleSave = () => {
-    if (!editTitle.trim()) return;
+  const handleSave = async () => {
+    if (!editTitle.trim() || !activeGroup) return;
 
-    if (isCreating) {
-      const newNote: Note = {
-        id: Date.now().toString(),
-        title: editTitle,
-        content: editContent,
-        preview: editContent.slice(0, 80) + "...",
-        author: "Desi",
-        time: "Just now",
-        tags: ["Next.js"],
-        color: "#6C63FF",
-      };
-      setNotes((prev) => [newNote, ...prev]);
-      setSelectedNote(newNote);
-      setIsCreating(false);
-    } else if (selectedNote) {
-      setNotes((prev) =>
-        prev.map((n) =>
-          n.id === selectedNote.id
-            ? {
-                ...n,
-                title: editTitle,
-                content: editContent,
-                preview: editContent.slice(0, 80) + "...",
-                time: "Just now",
-              }
-            : n
-        )
-      );
-      setSelectedNote({ ...selectedNote, title: editTitle, content: editContent });
+    try {
+      if (isCreating) {
+        const res = await fetch("/api/notes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            groupId: activeGroup._id,
+            title: editTitle,
+            content: editContent,
+            tags: editTags,
+          }),
+        });
+        if (res.ok) {
+          await fetchNotes();
+          setIsCreating(false);
+        }
+      } else if (selectedNote?._id) {
+        const res = await fetch(`/api/notes/${selectedNote._id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: editTitle,
+            content: editContent,
+            tags: editTags,
+          }),
+        });
+        if (res.ok) {
+          await fetchNotes();
+        }
+      }
+    } catch (err) {
+      console.error(err);
     }
   };
 
-  const handleNewNoteFromChat = (title: string, content: string) => {
-    const newNote: Note = {
-      id: Date.now().toString(),
-      title,
-      content,
-      preview: content.slice(0, 80) + "...",
-      author: "AI",
-      time: "Just now",
-      tags: ["Chat"],
-      color: "#1D9E75",
-    };
-    setNotes((prev) => [newNote, ...prev]);
-    setSelectedNote(newNote);
-    setEditTitle(title);
-    setEditContent(content);
-    setIsCreating(false);
+  const handleNewNoteFromChat = async (title: string, content: string) => {
+    if (!activeGroup) return;
+    try {
+      const res = await fetch("/api/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          groupId: activeGroup._id,
+          title,
+          content,
+          tags: ["Chat"],
+        }),
+      });
+      if (res.ok) {
+        await fetchNotes();
+        setEditTitle(title);
+        setEditContent(content);
+        setIsCreating(false);
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
+
+  if (!activeGroup) {
+    return (
+      <div className="flex h-screen items-center justify-center" data-theme="night">
+        <div className="text-center">
+          <p className="text-4xl mb-4">📝</p>
+          <p className="text-white font-medium">No active group selected</p>
+          <p className="text-base-content/50 text-sm">Select a group from the sidebar</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen" data-theme="night">
@@ -166,25 +226,35 @@ export default function NotesPage() {
         />
 
         <div className="flex-1 overflow-y-auto p-3">
-          <NotesList notes={filtered} onSelect={handleSelectNote} />
+          {loading ? (
+            <div className="flex justify-center py-10">
+              <span className="loading loading-spinner" style={{ color: "#6C63FF" }}></span>
+            </div>
+          ) : (
+            <NotesList notes={filtered} onSelect={handleSelectNote} />
+          )}
         </div>
       </div>
 
       {/* Editor */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {selectedNote || isCreating ? (
-          <NoteEditor
-            title={editTitle}
-            content={editContent}
-            onTitleChange={setEditTitle}
-            onContentChange={setEditContent}
-            onSave={handleSave}
-            onClose={() => {
-              setSelectedNote(null);
-              setIsCreating(false);
-            }}
-            onNewNoteFromChat={handleNewNoteFromChat}
-          />
+         <NoteEditor
+          title={editTitle}
+          content={editContent}
+          author={user?.name || "Me"}
+          groupId={activeGroup?._id}
+          tags={editTags}
+          onTitleChange={setEditTitle}
+          onContentChange={setEditContent}
+          onTagsChange={setEditTags}
+          onSave={handleSave}
+          onClose={() => {
+            setSelectedNote(null);
+            setIsCreating(false);
+          }}
+          onNewNoteFromChat={handleNewNoteFromChat}
+        />
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center gap-4">
             <p className="text-4xl">📝</p>

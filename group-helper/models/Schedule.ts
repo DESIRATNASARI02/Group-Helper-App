@@ -7,12 +7,10 @@ const ScheduleSchema = new Schema(
             ref: "Group",
             required: true,
         },
-
         title: {
             type: String,
             required: true,
         },
-
         description: {
             type: String,
             default: "",
@@ -22,22 +20,26 @@ const ScheduleSchema = new Schema(
             enum: ["study", "review", "exam", "meeting"],
             default: "study",
         },
-
+        date: {
+            type: String,
+            required: true,
+        },
         startTime: {
-            type: Date,
+            type: String,
             required: true,
         },
-
         endTime: {
-            type: Date,
+            type: String,
             required: true,
         },
-
+        members: {
+            type: String,
+            default: "All members",
+        },
         location: {
             type: String,
             default: "",
         },
-
         createdBy: {
             type: Schema.Types.ObjectId,
             ref: "User",
