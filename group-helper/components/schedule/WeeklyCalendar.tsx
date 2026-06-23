@@ -61,7 +61,7 @@ export default function WeeklyCalendar({ schedules }: WeeklyCalendarProps) {
     const getHeight = (startTime: string, endTime: string) => {
         const diff = timeToMinutes(endTime) - timeToMinutes(startTime);
 
-        return Math.max((diff / 60) * CELL_HEIGHT, 40);
+        return Math.max((diff / 60) * CELL_HEIGHT, 60);
     };
 
     const totalHeight = hours.length * CELL_HEIGHT;
