@@ -4,15 +4,33 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 const topics = [
-  "MongoDB",
-  "Next.js",
-  "React",
-  "TypeScript",
-  "Node.js",
+  // Teknologi & Pemrograman
   "JavaScript",
+  "TypeScript",
   "Python",
+  "React",
+  "Next.js",
+  "Node.js",
+  "MongoDB",
   "UI/UX",
   "DevOps",
+  // General
+  "Bahasa & Linguistik",
+  "Matematika",
+  "Sains & Fisika",
+  "Kimia & Biologi",
+  "Sejarah & Sosial",
+  "Ekonomi & Bisnis",
+  "Hukum",
+  "Kesehatan & Medis",
+  "Seni & Desain",
+  "Musik",
+  "Olahraga",
+  "Transportasi",
+  "Lingkungan & Alam",
+  "Teknologi Umum",
+  "Komputer & Jaringan",
+  // Other
   "Other",
 ];
 
@@ -22,9 +40,13 @@ export default function CreateGroupPage() {
     name: "",
     description: "",
     topic: "",
+    customTopic: "", // <==
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const isOther = form.topic === "Other"; // <==
+  const finalTopic = isOther ? form.customTopic : form.topic; // <==
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -36,8 +58,13 @@ export default function CreateGroupPage() {
     e.preventDefault();
     setError("");
 
-    if (!form.name || !form.topic) {
+    if (!form.name || !finalTopic) {
       setError("Group name and topic are required!");
+      return;
+    }
+
+    if (isOther && !form.customTopic.trim()) { // <==
+      setError("Please enter a custom topic!");
       return;
     }
 
@@ -47,7 +74,11 @@ export default function CreateGroupPage() {
       const res = await fetch("/api/groups", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          name: form.name,
+          description: form.description,
+          topic: finalTopic, // <== kirim finalTopic bukan form.topic
+        }),
       });
 
       const data = await res.json();
@@ -115,10 +146,57 @@ export default function CreateGroupPage() {
               required
             >
               <option value="" disabled>Select a topic...</option>
-              {topics.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
+
+              <optgroup label="💻 Teknologi & Pemrograman"> {/* <== group kategori */}
+                <option value="JavaScript">JavaScript</option>
+                <option value="TypeScript">TypeScript</option>
+                <option value="Python">Python</option>
+                <option value="React">React</option>
+                <option value="Next.js">Next.js</option>
+                <option value="Node.js">Node.js</option>
+                <option value="MongoDB">MongoDB</option>
+                <option value="UI/UX">UI/UX</option>
+                <option value="DevOps">DevOps</option>
+                <option value="Komputer & Jaringan">Komputer & Jaringan</option>
+                <option value="Teknologi Umum">Teknologi Umum</option>
+              </optgroup>
+
+              <optgroup label="📚 Akademik"> {/* <== */}
+                <option value="Matematika">Matematika</option>
+                <option value="Sains & Fisika">Sains & Fisika</option>
+                <option value="Kimia & Biologi">Kimia & Biologi</option>
+                <option value="Sejarah & Sosial">Sejarah & Sosial</option>
+                <option value="Ekonomi & Bisnis">Ekonomi & Bisnis</option>
+                <option value="Hukum">Hukum</option>
+                <option value="Kesehatan & Medis">Kesehatan & Medis</option>
+                <option value="Bahasa & Linguistik">Bahasa & Linguistik</option>
+              </optgroup>
+
+              <optgroup label="🎨 Kreatif & Lainnya"> {/* <== */}
+                <option value="Seni & Desain">Seni & Desain</option>
+                <option value="Musik">Musik</option>
+                <option value="Olahraga">Olahraga</option>
+                <option value="Transportasi">Transportasi</option>
+                <option value="Lingkungan & Alam">Lingkungan & Alam</option>
+              </optgroup>
+
+              <optgroup label="➕ Lainnya">
+                <option value="Other">Other (Custom)</option>
+              </optgroup>
             </select>
+
+            {/* Custom Topic Input — muncul kalau pilih Other */}
+            {isOther && ( // <==
+              <input
+                type="text"
+                name="customTopic"
+                placeholder="Tulis topic kamu... (e.g. Belajar Bahasa Inggris)"
+                className="input input-bordered w-full mt-2"
+                value={form.customTopic}
+                onChange={handleChange}
+                autoFocus
+              />
+            )}
           </div>
 
           {/* Description */}
@@ -146,9 +224,9 @@ export default function CreateGroupPage() {
               <div className="flex items-center justify-between mb-2">
                 <span
                   className="badge badge-sm text-white"
-                  style={{ background: form.topic ? "#6C63FF" : "#888" }}
+                  style={{ background: finalTopic ? "#6C63FF" : "#888" }}
                 >
-                  {form.topic || "No topic"}
+                  {finalTopic || "No topic"}
                 </span>
                 <span className="text-xs text-base-content/40">👥 1 member</span>
               </div>

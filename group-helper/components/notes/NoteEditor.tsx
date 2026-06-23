@@ -23,25 +23,12 @@ interface NoteEditorProps {
     loading?: boolean;
 }
 
-const availableTags = [
-    "Next.js",
-    "MongoDB",
-    "Auth",
-    "CSS",
-    "Deploy",
-    "Chat",
-    "React",
-    "TypeScript",
-    "Node.js",
-    "Other",
-];
-
 export default function NoteEditor({
     title,
     content,
     author = "Me",
     groupId,
-    tags = ["Next.js"],
+    tags = ["General"],
     onTitleChange,
     onContentChange,
     onTagsChange,
@@ -58,6 +45,7 @@ export default function NoteEditor({
     const [uploadingImage, setUploadingImage] = useState(false);
     const [showTagModal, setShowTagModal] = useState(false);
     const [selectedTags, setSelectedTags] = useState<string[]>(tags);
+    const [customTag, setCustomTag] = useState(""); // <==
 
     const editor = useEditor({
         extensions: [StarterKit, TiptapImage.configure({ inline: true })],
@@ -116,16 +104,13 @@ export default function NoteEditor({
             });
             if (res.ok) {
                 const data = await res.json();
-
                 const currentContent = editor.getHTML();
-
                 const updatedContent = `
                   ${currentContent}
                   <hr />
                   <h2>✨ Ringkasan AI</h2>
                   <p>${data.summary}</p>
                 `;
-
                 editor.commands.setContent(updatedContent);
                 onContentChange(updatedContent);
             }
@@ -191,7 +176,6 @@ export default function NoteEditor({
                     onChange={(e) => onTitleChange(e.target.value)}
                 />
                 <div className="flex items-center gap-2">
-                    {/* Tag selector */}
                     <button
                         onClick={() => setShowTagModal(true)}
                         className="btn btn-ghost btn-xs gap-1 text-base-content/40 hover:text-white"
@@ -427,25 +411,53 @@ export default function NoteEditor({
                 onClose={() => setShowTagModal(false)}
                 title="Select Tags"
             >
-                <div className="flex flex-wrap gap-2">
-                    {availableTags.map((tag) => (
-                        <button
-                            key={tag}
-                            onClick={() => handleToggleTag(tag)}
-                            className="badge badge-lg cursor-pointer transition-all"
-                            style={
-                                selectedTags.includes(tag)
-                                    ? { background: "#6C63FF", color: "white" }
-                                    : { background: "#2a2a4a", color: "white" }
+                {/* Input custom tag baru */} {/* <== */}
+                <div className="flex gap-2 mb-3">
+                    <input
+                        type="text"
+                        placeholder="Tambah tag baru..."
+                        className="input input-bordered input-sm flex-1"
+                        value={customTag}
+                        onChange={(e) => setCustomTag(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter" && customTag.trim()) {
+                                handleToggleTag(customTag.trim());
+                                setCustomTag("");
                             }
-                        >
-                            {selectedTags.includes(tag) ? "✓ " : ""}
-                            {tag}
-                        </button>
-                    ))}
+                        }}
+                    />
+                    <button
+                        className="btn btn-sm text-white"
+                        style={{ background: "#6C63FF" }}
+                        onClick={() => {
+                            if (customTag.trim()) {
+                                handleToggleTag(customTag.trim());
+                                setCustomTag("");
+                            }
+                        }}
+                    >
+                        + Add
+                    </button>
                 </div>
+
+                {/* Tags yang sudah dipilih */}
+                {selectedTags.length > 0 && ( // <==
+                    <div className="flex flex-wrap gap-2 mb-3 pb-3 border-b border-white/10">
+                        {selectedTags.map((tag) => (
+                            <button
+                                key={tag}
+                                onClick={() => handleToggleTag(tag)}
+                                className="badge badge-lg cursor-pointer transition-all"
+                                style={{ background: "#6C63FF", color: "white" }}
+                            >
+                                ✓ {tag}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
                 <button
-                    className="btn w-full text-white mt-4"
+                    className="btn w-full text-white mt-2"
                     style={{ background: "#6C63FF" }}
                     onClick={() => setShowTagModal(false)}
                 >

@@ -25,8 +25,6 @@ interface User {
   email: string;
 }
 
-const allTags = ["All", "Next.js", "MongoDB", "Auth", "CSS", "Deploy", "Chat"];
-
 const tagColors: Record<string, string> = {
   "Next.js": "#6C63FF",
   "MongoDB": "#1D9E75",
@@ -34,6 +32,7 @@ const tagColors: Record<string, string> = {
   "CSS": "#888780",
   "Deploy": "#E24B4A",
   "Chat": "#1D9E75",
+  "General": "#6C63FF",
   "default": "#6C63FF",
 };
 
@@ -63,13 +62,14 @@ export default function NotesPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
-  const [editTags, setEditTags] = useState<string[]>(["Next.js"]);
+  const [editTags, setEditTags] = useState<string[]>(["General"]); // <==
   const [user, setUser] = useState<User | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [pendingNote, setPendingNote] = useState<string | null>(null);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   const [originalTitle, setOriginalTitle] = useState("");
   const [originalContent, setOriginalContent] = useState("");
+  const [allTags, setAllTags] = useState<string[]>(["All"]); // <==
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -101,10 +101,16 @@ export default function NotesPage() {
           preview: stripHtml(note.content),
           author: note.createdBy?.name || "Unknown",
           time: formatTime(note.updatedAt),
-          tags: note.tags?.length > 0 ? note.tags : ["Next.js"],
+          tags: note.tags?.length > 0 ? note.tags : ["General"], // <==
           color: tagColors[note.tags?.[0]] || tagColors["default"],
         }));
         setNotes(formatted);
+
+        // generate tags dinamis dari semua notes <==
+        const uniqueTags = ["All", ...Array.from(
+          new Set(formatted.flatMap((n) => n.tags))
+        )];
+        setAllTags(uniqueTags);
       }
     } catch (err) {
       console.error(err);
@@ -139,7 +145,7 @@ export default function NotesPage() {
     setSelectedNote(null);
     setEditTitle("");
     setEditContent("");
-    setEditTags(["Next.js"]);
+    setEditTags(["General"]); // <==
     setOriginalTitle("");
     setOriginalContent("");
     setIsCreating(true);
@@ -310,7 +316,7 @@ export default function NotesPage() {
         style={{ background: "#151528" }}
       >
         <NotesFilter
-          tags={allTags}
+          tags={allTags} // <== sekarang dinamis
           activeTag={activeTag}
           search={search}
           onTagChange={setActiveTag}
@@ -333,7 +339,7 @@ export default function NotesPage() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {selectedNote || isCreating ? (
           <NoteEditor
-            key={selectedNote?.id || "new"} 
+            key={selectedNote?.id || "new"}
             title={editTitle}
             content={editContent}
             author={user?.name || "Me"}
