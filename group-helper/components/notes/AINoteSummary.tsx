@@ -1,5 +1,7 @@
 "use client";
 
+import ReactMarkdown from "react-markdown"; 
+
 interface AINoteSummaryProps {
   onSummarizeNote: () => void;
   onSaveChatAsNote: () => void;
@@ -58,7 +60,9 @@ export default function AINoteSummary({
               ✕
             </button>
           </div>
-          <p className="text-sm text-white/80 whitespace-pre-line">{summary}</p>
+          <div className="text-sm text-white/80 prose prose-invert max-w-none prose-sm"> 
+            <ReactMarkdown>{summary}</ReactMarkdown> 
+          </div>
         </div>
       )}
     </div>

@@ -16,9 +16,9 @@ export default function ChatPage() {
     const [isTyping, setIsTyping] = useState(false);
     const [loadingSummary, setLoadingSummary] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [aiError, setAiError] = useState(""); 
     const bottomRef = useRef<HTMLDivElement>(null);
 
-    // Fetch current user
     useEffect(() => {
         const fetchCurrentUser = async () => {
             const res = await fetch("/api/auth/me");
@@ -30,34 +30,25 @@ export default function ChatPage() {
         fetchCurrentUser();
     }, []);
 
-    // Fetch group members
     useEffect(() => {
         if (!activeGroup) return;
         const fetchMembers = async () => {
             const res = await fetch(`/api/groups/${activeGroup._id}/members`);
             if (res.ok) {
                 const data = await res.json();
-                const formatted =
-                    data.members?.map((m: any) => ({
-                        initials:
-                            m.name
-                                ?.split(" ")
-                                .map((n: string) => n[0])
-                                .join("")
-                                .toUpperCase()
-                                .slice(0, 2) || "??",
-                        color: m.avatarColor || "#CECBF6",
-                        textColor: "#3C3489",
-                        name: m.name || "Unknown",
-                        online: true,
-                    })) || [];
+                const formatted = data.members?.map((m: any) => ({
+                    initials: m.name?.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2) || "??",
+                    color: m.avatarColor || "#CECBF6",
+                    textColor: "#3C3489",
+                    name: m.name || "Unknown",
+                    online: true,
+                })) || [];
                 setGroupMembers(formatted);
             }
         };
         fetchMembers();
     }, [activeGroup]);
 
-    // Pusher + fetch messages
     useEffect(() => {
         if (!activeGroup) return;
 
@@ -70,24 +61,19 @@ export default function ChatPage() {
                 const filtered = prev.filter((m) => m.id !== data._id);
                 const newMsg: Message = {
                     id: data._id,
-                    name: data.senderId?.name || "Unknown",
-                    initials: data.senderId?.name
-                        ? data.senderId.name
-                              .split(" ")
-                              .map((n: string) => n[0])
-                              .join("")
-                              .toUpperCase()
-                              .slice(0, 2)
+                    name: data.isAI ? "✨ AI Assistant" : data.senderId?.name || "Unknown",
+                    initials: data.isAI ? "AI" : data.senderId?.name
+                        ? data.senderId.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
                         : "??",
-                    color: "#CECBF6",
-                    textColor: "#3C3489",
+                    color: data.isAI ? "#6C63FF" : "#CECBF6",
+                    textColor: data.isAI ? "white" : "#3C3489",
                     message: data.content,
                     time: new Date(data.createdAt).toLocaleTimeString("id-ID", {
                         hour: "2-digit",
                         minute: "2-digit",
                     }),
-                    isMe: data.senderId?._id === currentUserId,
-                    isBot: false,
+                    isMe: false,
+                    isBot: data.isAI || false,
                 };
                 return [...filtered, newMsg];
             });
@@ -110,21 +96,15 @@ export default function ChatPage() {
                 reminders: [
                     {
                         title: data.title,
-                        date: new Date(data.remindAt).toLocaleDateString(
-                            "en-US",
-                            {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                            },
-                        ),
-                        time: new Date(data.remindAt).toLocaleTimeString(
-                            "id-ID",
-                            {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                            },
-                        ),
+                        date: new Date(data.remindAt).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                        }),
+                        time: new Date(data.remindAt).toLocaleTimeString("id-ID", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                        }),
                         priority: "high",
                     },
                 ],
@@ -137,7 +117,6 @@ export default function ChatPage() {
         };
     }, [activeGroup, currentUserId]);
 
-    // Scroll to bottom
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
@@ -151,24 +130,19 @@ export default function ChatPage() {
                 const data = await res.json();
                 const formatted: Message[] = data.map((msg: any) => ({
                     id: msg._id,
-                    name: msg.senderId?.name || "Unknown",
-                    initials: msg.senderId?.name
-                        ? msg.senderId.name
-                              .split(" ")
-                              .map((n: string) => n[0])
-                              .join("")
-                              .toUpperCase()
-                              .slice(0, 2)
+                    name: msg.isAI ? "✨ AI Assistant" : msg.senderId?.name || "Unknown",
+                    initials: msg.isAI ? "AI" : msg.senderId?.name
+                        ? msg.senderId.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
                         : "??",
-                    color: "#CECBF6",
-                    textColor: "#3C3489",
+                    color: msg.isAI ? "#6C63FF" : "#CECBF6",
+                    textColor: msg.isAI ? "white" : "#3C3489",
                     message: msg.content,
                     time: new Date(msg.createdAt).toLocaleTimeString("id-ID", {
                         hour: "2-digit",
                         minute: "2-digit",
                     }),
-                    isMe: msg.senderId?._id === currentUserId,
-                    isBot: false,
+                    isMe: !msg.isAI && msg.senderId?._id === currentUserId,
+                    isBot: msg.isAI || false,
                 }));
                 setMessages(formatted);
             }
@@ -225,44 +199,38 @@ export default function ChatPage() {
 
     const handleSummary = async () => {
         if (!activeGroup) return;
-
         setLoadingSummary(true);
-
+        setAiError(""); 
         try {
-            // Generate summary
             const res = await fetch("/api/chat/summary", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    groupId: activeGroup._id,
-                }),
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ groupId: activeGroup._id }),
             });
-
-            if (!res.ok) {
-                throw new Error("Failed to generate summary");
-            }
 
             const data = await res.json();
 
-            // Kirim summary sebagai message ke group
+            if (!res.ok) { 
+                setAiError(data.message || "Terjadi kesalahan pada AI.");
+                return;
+            }
+
             const sendRes = await fetch("/api/messages", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     groupId: activeGroup._id,
                     content: `✨ AI Summary\n\n${data.summary}`,
+                    isAI: true,
                 }),
             });
 
             if (!sendRes.ok) {
-                throw new Error("Failed to send summary message");
+                setAiError("Gagal mengirim ringkasan. Silakan coba lagi.");
             }
         } catch (err) {
             console.error(err);
+            setAiError("Terjadi kesalahan. Silakan coba lagi."); 
         } finally {
             setLoadingSummary(false);
         }
@@ -270,18 +238,11 @@ export default function ChatPage() {
 
     if (!activeGroup) {
         return (
-            <div
-                className="flex h-screen items-center justify-center"
-                data-theme="night"
-            >
+            <div className="flex h-screen items-center justify-center" data-theme="night">
                 <div className="text-center">
                     <p className="text-4xl mb-4">💬</p>
-                    <p className="text-white font-medium">
-                        No active group selected
-                    </p>
-                    <p className="text-base-content/50 text-sm">
-                        Select a group from the sidebar
-                    </p>
+                    <p className="text-white font-medium">No active group selected</p>
+                    <p className="text-base-content/50 text-sm">Select a group from the sidebar</p>
                 </div>
             </div>
         );
@@ -308,15 +269,11 @@ export default function ChatPage() {
                     <button
                         onClick={handleSummary}
                         className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm w-full text-left transition-all hover:bg-white/5 ${
-                            loadingSummary
-                                ? "text-purple-400"
-                                : "text-base-content/50 hover:text-white"
+                            loadingSummary ? "text-purple-400" : "text-base-content/50 hover:text-white"
                         }`}
                     >
                         <span>✨</span>
-                        <span>
-                            {loadingSummary ? "Summarizing..." : "AI Summary"}
-                        </span>
+                        <span>{loadingSummary ? "Summarizing..." : "AI Summary"}</span>
                     </button>
                 </div>
 
@@ -332,44 +289,40 @@ export default function ChatPage() {
                     style={{ background: "#1a1a2e" }}
                 >
                     <div className="flex items-center gap-3">
-                        <span className="text-white font-semibold">
-                            #general
-                        </span>
+                        <span className="text-white font-semibold">#general</span>
                         <div className="w-px h-4 bg-white/20"></div>
-                        <span className="text-xs text-base-content/40">
-                            {activeGroup.name}
-                        </span>
+                        <span className="text-xs text-base-content/40">{activeGroup.name}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <button className="btn btn-ghost btn-xs btn-circle text-base-content/40 hover:text-white">
-                            🔍
-                        </button>
-                        <button className="btn btn-ghost btn-xs btn-circle text-base-content/40 hover:text-white">
-                            🔔
-                        </button>
+                        <button className="btn btn-ghost btn-xs btn-circle text-base-content/40 hover:text-white">🔍</button>
+                        <button className="btn btn-ghost btn-xs btn-circle text-base-content/40 hover:text-white">🔔</button>
                     </div>
                 </div>
 
-                {/* AI Summary */}
+                {/* AI Error Alert */} {/* <== */}
+                {aiError && (
+                    <div className="mx-4 mt-3 alert alert-error text-sm py-2 flex justify-between">
+                        <span>⚠️ {aiError}</span>
+                        <button
+                            className="ml-auto text-xs"
+                            onClick={() => setAiError("")}
+                        >
+                            ✕
+                        </button>
+                    </div>
+                )}
 
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
                     {loading ? (
                         <div className="flex justify-center py-20">
-                            <span
-                                className="loading loading-spinner loading-lg"
-                                style={{ color: "#6C63FF" }}
-                            ></span>
+                            <span className="loading loading-spinner loading-lg" style={{ color: "#6C63FF" }}></span>
                         </div>
                     ) : messages.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full gap-3 opacity-50">
                             <p className="text-4xl">💬</p>
-                            <p className="text-white text-sm">
-                                No messages yet
-                            </p>
-                            <p className="text-base-content/40 text-xs">
-                                Be the first to say something!
-                            </p>
+                            <p className="text-white text-sm">No messages yet</p>
+                            <p className="text-base-content/40 text-xs">Be the first to say something!</p>
                         </div>
                     ) : (
                         messages.map((msg) => (
@@ -388,24 +341,12 @@ export default function ChatPage() {
                             </div>
                             <div
                                 className="px-4 py-3"
-                                style={{
-                                    background: "#2a1f5e",
-                                    borderRadius: "4px 18px 18px 18px",
-                                }}
+                                style={{ background: "#2a1f5e", borderRadius: "4px 18px 18px 18px" }}
                             >
                                 <div className="flex gap-1">
-                                    <div
-                                        className="w-2 h-2 rounded-full bg-white/50 animate-bounce"
-                                        style={{ animationDelay: "0ms" }}
-                                    ></div>
-                                    <div
-                                        className="w-2 h-2 rounded-full bg-white/50 animate-bounce"
-                                        style={{ animationDelay: "150ms" }}
-                                    ></div>
-                                    <div
-                                        className="w-2 h-2 rounded-full bg-white/50 animate-bounce"
-                                        style={{ animationDelay: "300ms" }}
-                                    ></div>
+                                    <div className="w-2 h-2 rounded-full bg-white/50 animate-bounce" style={{ animationDelay: "0ms" }}></div>
+                                    <div className="w-2 h-2 rounded-full bg-white/50 animate-bounce" style={{ animationDelay: "150ms" }}></div>
+                                    <div className="w-2 h-2 rounded-full bg-white/50 animate-bounce" style={{ animationDelay: "300ms" }}></div>
                                 </div>
                             </div>
                         </div>

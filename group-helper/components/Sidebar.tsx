@@ -193,8 +193,8 @@ export default function Sidebar() {
           <div
             className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
             style={{
-              background: user?.avatarColor || "#CECBF6", // <==
-              color: avatarTextColor, // <==
+              background: user?.avatarColor || "#CECBF6", 
+              color: avatarTextColor, 
             }}
           >
             {user ? getInitials(user.name) : ".."}

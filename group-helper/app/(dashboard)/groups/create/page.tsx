@@ -40,13 +40,13 @@ export default function CreateGroupPage() {
     name: "",
     description: "",
     topic: "",
-    customTopic: "", // <==
+    customTopic: "", 
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const isOther = form.topic === "Other"; // <==
-  const finalTopic = isOther ? form.customTopic : form.topic; // <==
+  const isOther = form.topic === "Other"; 
+  const finalTopic = isOther ? form.customTopic : form.topic;
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -63,7 +63,7 @@ export default function CreateGroupPage() {
       return;
     }
 
-    if (isOther && !form.customTopic.trim()) { // <==
+    if (isOther && !form.customTopic.trim()) { 
       setError("Please enter a custom topic!");
       return;
     }
@@ -77,7 +77,7 @@ export default function CreateGroupPage() {
         body: JSON.stringify({
           name: form.name,
           description: form.description,
-          topic: finalTopic, // <== kirim finalTopic bukan form.topic
+          topic: finalTopic, 
         }),
       });
 
@@ -147,7 +147,7 @@ export default function CreateGroupPage() {
             >
               <option value="" disabled>Select a topic...</option>
 
-              <optgroup label="💻 Teknologi & Pemrograman"> {/* <== group kategori */}
+              <optgroup label="💻 Teknologi & Pemrograman">
                 <option value="JavaScript">JavaScript</option>
                 <option value="TypeScript">TypeScript</option>
                 <option value="Python">Python</option>
@@ -172,7 +172,7 @@ export default function CreateGroupPage() {
                 <option value="Bahasa & Linguistik">Bahasa & Linguistik</option>
               </optgroup>
 
-              <optgroup label="🎨 Kreatif & Lainnya"> {/* <== */}
+              <optgroup label="🎨 Kreatif & Lainnya"> 
                 <option value="Seni & Desain">Seni & Desain</option>
                 <option value="Musik">Musik</option>
                 <option value="Olahraga">Olahraga</option>
@@ -185,8 +185,8 @@ export default function CreateGroupPage() {
               </optgroup>
             </select>
 
-            {/* Custom Topic Input — muncul kalau pilih Other */}
-            {isOther && ( // <==
+            
+            {isOther && ( 
               <input
                 type="text"
                 name="customTopic"

@@ -7,17 +7,19 @@ const MessageSchema = new Schema(
             ref: "Group",
             required: true,
         },
-
         senderId: {
             type: Schema.Types.ObjectId,
             ref: "User",
             required: true,
         },
-
         content: {
             type: String,
             required: true,
             trim: true,
+        },
+        isAI: { 
+            type: Boolean,
+            default: false,
         },
     },
     {

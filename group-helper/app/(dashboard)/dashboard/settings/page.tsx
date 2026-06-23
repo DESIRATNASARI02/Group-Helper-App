@@ -16,7 +16,7 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("profile");
 
   const handleProfileSave = (updated: { name: string; email: string; avatarColor: string }) => {
-    if (user) setUser({ ...user, ...updated }); // 
+    if (user) setUser({ ...user, ...updated }); 
   };
 
   return (

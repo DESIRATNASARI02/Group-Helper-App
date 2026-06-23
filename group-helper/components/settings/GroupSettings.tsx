@@ -54,7 +54,7 @@ export default function GroupSettings() {
       });
       if (res.ok) {
         setShowLeaveModal(false);
-        resetActiveGroup(); // <==
+        resetActiveGroup(); 
         setTimeout(() => router.push("/groups"), 100); 
       } else {
         const data = await res.json();
@@ -75,7 +75,7 @@ export default function GroupSettings() {
       });
       if (res.ok) {
         setShowDeleteModal(false);
-        resetActiveGroup(); // <==
+        resetActiveGroup(); 
         setTimeout(() => router.push("/groups"), 100); 
       } else {
         const data = await res.json();

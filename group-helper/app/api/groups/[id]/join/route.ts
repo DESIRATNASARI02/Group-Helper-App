@@ -32,7 +32,7 @@ export async function POST(
 
         const { id } = await params;
         const group = await Group.findById(id);
-console.log("Looking for group:", id, "Found:", group);
+
 if (!group) {
     return NextResponse.json(
         { message: "Group not found" },

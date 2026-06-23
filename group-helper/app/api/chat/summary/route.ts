@@ -52,10 +52,26 @@ export async function POST(req: NextRequest) {
     `);
 
     const summary = result.response.text();
-
     return NextResponse.json({ summary });
-  } catch (error) {
+
+  } catch (error: any) { 
     console.error(error);
+
+    // handle rate limit / service unavailable <==
+    if (error?.status === 503 || error?.statusText === "Service Unavailable") {
+      return NextResponse.json(
+        { message: "Layanan AI sedang sibuk. Silakan coba beberapa saat lagi." },
+        { status: 503 }
+      );
+    }
+
+    if (error?.status === 429) {
+      return NextResponse.json(
+        { message: "Batas penggunaan AI tercapai. Silakan coba beberapa menit lagi." },
+        { status: 429 }
+      );
+    }
+
     return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
   }
 }

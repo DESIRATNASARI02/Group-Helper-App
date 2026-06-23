@@ -6,6 +6,7 @@ import TiptapImage from "@tiptap/extension-image";
 import AINoteSummary from "@/components/notes/AINoteSummary";
 import DownloadPDF from "@/components/notes/DownloadPDF";
 import Modal from "@/components/ui/Modal";
+import { marked } from "marked";
 import { useState } from "react";
 
 interface NoteEditorProps {
@@ -40,12 +41,13 @@ export default function NoteEditor({
     const [loadingSummarize, setLoadingSummarize] = useState(false);
     const [loadingChat, setLoadingChat] = useState(false);
     const [summary, setSummary] = useState("");
+    const [aiError, setAiError] = useState(""); 
     const [showImageModal, setShowImageModal] = useState(false);
     const [imageUrl, setImageUrl] = useState("");
     const [uploadingImage, setUploadingImage] = useState(false);
     const [showTagModal, setShowTagModal] = useState(false);
     const [selectedTags, setSelectedTags] = useState<string[]>(tags);
-    const [customTag, setCustomTag] = useState(""); // <==
+    const [customTag, setCustomTag] = useState("");
 
     const editor = useEditor({
         extensions: [StarterKit, TiptapImage.configure({ inline: true })],
@@ -96,26 +98,37 @@ export default function NoteEditor({
         if (!editor) return;
         setLoadingSummarize(true);
         setSummary("");
+        setAiError(""); 
         try {
             const res = await fetch("/api/notes/summary", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ content: editor.getText() }),
             });
-            if (res.ok) {
-                const data = await res.json();
-                const currentContent = editor.getHTML();
-                const updatedContent = `
-                  ${currentContent}
-                  <hr />
-                  <h2>✨ Ringkasan AI</h2>
-                  <p>${data.summary}</p>
-                `;
-                editor.commands.setContent(updatedContent);
-                onContentChange(updatedContent);
+
+            const data = await res.json();
+
+            if (!res.ok) { 
+                setAiError(data.message || "Terjadi kesalahan pada AI.");
+                return;
             }
+
+            const currentContent = editor.getHTML();
+            const summaryHtml = await marked(data.summary);
+            const updatedContent = `
+                ${currentContent}
+                <hr />
+                <br />
+                <h2>✨ Ringkasan AI</h2>
+                <br />
+                ${summaryHtml}
+                <br />
+            `;
+            editor.commands.setContent(updatedContent);
+            onContentChange(updatedContent);
         } catch (err) {
             console.error(err);
+            setAiError("Terjadi kesalahan. Silakan coba lagi."); 
         } finally {
             setLoadingSummarize(false);
         }
@@ -124,23 +137,30 @@ export default function NoteEditor({
     const handleSaveChatAsNote = async () => {
         if (!groupId) return;
         setLoadingChat(true);
+        setAiError(""); 
         try {
             const res = await fetch("/api/chat/summary", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ groupId }),
             });
-            if (res.ok) {
-                const data = await res.json();
-                if (onNewNoteFromChat) {
-                    onNewNoteFromChat(
-                        "Ringkasan Chat — " + new Date().toLocaleDateString(),
-                        data.summary,
-                    );
-                }
+
+            const data = await res.json();
+
+            if (!res.ok) { 
+                setAiError(data.message || "Terjadi kesalahan pada AI.");
+                return;
+            }
+
+            if (onNewNoteFromChat) {
+                onNewNoteFromChat(
+                    "Ringkasan Chat — " + new Date().toLocaleDateString(),
+                    data.summary,
+                );
             }
         } catch (err) {
             console.error(err);
+            setAiError("Terjadi kesalahan. Silakan coba lagi."); 
         } finally {
             setLoadingChat(false);
         }
@@ -337,6 +357,18 @@ export default function NoteEditor({
                 className="px-4 py-3 border-t border-white/10"
                 style={{ background: "#1a1a2e" }}
             >
+                {/* Error Alert */} {/* <== */}
+                {aiError && (
+                    <div className="alert alert-error text-sm mb-2 py-2 flex justify-between">
+                        <span>⚠️ {aiError}</span>
+                        <button
+                            className="ml-auto text-xs"
+                            onClick={() => setAiError("")}
+                        >
+                            ✕
+                        </button>
+                    </div>
+                )}
                 <AINoteSummary
                     onSummarizeNote={handleSummarizeNote}
                     onSaveChatAsNote={handleSaveChatAsNote}
@@ -411,7 +443,6 @@ export default function NoteEditor({
                 onClose={() => setShowTagModal(false)}
                 title="Select Tags"
             >
-                {/* Input custom tag baru */} {/* <== */}
                 <div className="flex gap-2 mb-3">
                     <input
                         type="text"
@@ -440,8 +471,7 @@ export default function NoteEditor({
                     </button>
                 </div>
 
-                {/* Tags yang sudah dipilih */}
-                {selectedTags.length > 0 && ( // <==
+                {selectedTags.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-3 pb-3 border-b border-white/10">
                         {selectedTags.map((tag) => (
                             <button

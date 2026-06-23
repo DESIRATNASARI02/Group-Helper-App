@@ -168,7 +168,6 @@ export default function RemindersPage() {
     (r) => r.isSent
   ).length;
 
-  // FORMAT TAMPILAN UNTUK UI
   const formatRemindAt = (
     remindAt: string
   ) => {
