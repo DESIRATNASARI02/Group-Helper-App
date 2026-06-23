@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
         }
 
         const groupId = req.nextUrl.searchParams.get("groupId");
+        const createdBy = req.nextUrl.searchParams.get("createdBy");
 
         if (!groupId) {
             return NextResponse.json(
@@ -39,7 +40,10 @@ export async function GET(req: NextRequest) {
             );
         }
 
-        const tasks = await Task.find({ groupId })
+        const taskQuery =
+            createdBy === "me" ? { groupId, createdBy: user.id } : { groupId };
+
+        const tasks = await Task.find(taskQuery)
             .populate("createdBy", "name email")
             .sort({ createdAt: -1 });
 
