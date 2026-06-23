@@ -10,38 +10,22 @@ export async function GET(
 ) {
     try {
         await connectDB();
-
         const user = await getCurrentUser();
-
         if (!user) {
-            return NextResponse.json(
-                { message: "Unauthorized" },
-                { status: 401 },
-            );
+            return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
         }
 
         const { id } = await params;
-
-        const group = await Group.findOne({
-            _id: id,
-            ownerId: user.id,
-        });
+        const group = await Group.findById(id); 
 
         if (!group) {
-            return NextResponse.json(
-                { message: "Group not found" },
-                { status: 404 },
-            );
+            return NextResponse.json({ message: "Group not found" }, { status: 404 });
         }
 
         return NextResponse.json(group);
     } catch (error) {
         console.error(error);
-
-        return NextResponse.json(
-            { message: "Internal Server Error" },
-            { status: 500 },
-        );
+        return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
     }
 }
 
@@ -52,53 +36,37 @@ export async function PUT(
 ) {
     try {
         await connectDB();
-
         const user = await getCurrentUser();
-
         if (!user) {
-            return NextResponse.json(
-                { message: "Unauthorized" },
-                { status: 401 },
-            );
+            return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
         }
 
         const { id } = await params;
         const body = await req.json();
+        const { name, description, topic } = body;
 
-        const { name, description } = body;
-
-        const group = await Group.findOneAndUpdate(
-            {
-                _id: id,
-                ownerId: user.id,
-            },
-            {
-                name,
-                description,
-            },
-            {
-                new: true,
-            },
-        );
+        const group = await Group.findById(id); 
 
         if (!group) {
+            return NextResponse.json({ message: "Group not found" }, { status: 404 });
+        }
+
+        if (group.ownerId.toString() !== user.id.toString()) { 
             return NextResponse.json(
-                { message: "Group not found" },
-                { status: 404 },
+                { message: "Only the group admin can edit this group." },
+                { status: 403 }
             );
         }
 
-        return NextResponse.json({
-            message: "Group updated successfully",
-            group,
-        });
+        group.name = name || group.name;
+        group.description = description || group.description;
+        group.topic = topic || group.topic;
+        await group.save();
+
+        return NextResponse.json({ message: "Group updated successfully", group });
     } catch (error) {
         console.error(error);
-
-        return NextResponse.json(
-            { message: "Internal Server Error" },
-            { status: 500 },
-        );
+        return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
     }
 }
 
@@ -109,39 +77,31 @@ export async function DELETE(
 ) {
     try {
         await connectDB();
-
         const user = await getCurrentUser();
-
         if (!user) {
-            return NextResponse.json(
-                { message: "Unauthorized" },
-                { status: 401 },
-            );
+            return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
         }
 
         const { id } = await params;
 
-        const group = await Group.findOneAndDelete({
-            _id: id,
-            ownerId: user.id,
-        });
+        const group = await Group.findById(id); 
 
         if (!group) {
+            return NextResponse.json({ message: "Group not found" }, { status: 404 });
+        }
+
+        if (group.ownerId.toString() !== user.id.toString()) { 
             return NextResponse.json(
-                { message: "Group not found" },
-                { status: 404 },
+                { message: "Only the group admin can delete this group." },
+                { status: 403 }
             );
         }
 
-        return NextResponse.json({
-            message: "Group deleted successfully",
-        });
+        await group.deleteOne();
+
+        return NextResponse.json({ message: "Group deleted successfully" });
     } catch (error) {
         console.error(error);
-
-        return NextResponse.json(
-            { message: "Internal Server Error" },
-            { status: 500 },
-        );
+        return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
     }
 }

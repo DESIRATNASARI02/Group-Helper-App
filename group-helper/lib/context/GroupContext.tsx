@@ -10,24 +10,38 @@ interface Group {
   members: string[];
 }
 
+interface User {
+  _id: string;
+  name: string;
+  email: string;
+  avatarColor?: string;
+}
+
 interface GroupContextType {
   activeGroup: Group | null;
   groups: Group[];
   setActiveGroup: (group: Group) => void;
+  resetActiveGroup: () => void; 
   loading: boolean;
+  user: User | null;
+  setUser: (user: User) => void;
 }
 
 const GroupContext = createContext<GroupContextType>({
   activeGroup: null,
   groups: [],
   setActiveGroup: () => {},
+  resetActiveGroup: () => {}, 
   loading: true,
+  user: null,
+  setUser: () => {},
 });
 
 export function GroupProvider({ children }: { children: ReactNode }) {
   const [groups, setGroups] = useState<Group[]>([]);
   const [activeGroup, setActiveGroup] = useState<Group | null>(null);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     const fetchGroups = async () => {
@@ -47,11 +61,40 @@ export function GroupProvider({ children }: { children: ReactNode }) {
         setLoading(false);
       }
     };
+
+    const fetchUser = async () => {
+      try {
+        const res = await fetch("/api/auth/me");
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data.user);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
     fetchGroups();
+    fetchUser();
   }, []);
 
+  const resetActiveGroup = () => { 
+    setGroups((prev) => prev.filter((g) => g._id !== activeGroup?._id));
+    setActiveGroup(null);
+  };
+
   return (
-    <GroupContext.Provider value={{ activeGroup, groups, setActiveGroup, loading }}>
+    <GroupContext.Provider
+      value={{
+        activeGroup,
+        groups,
+        setActiveGroup,
+        resetActiveGroup, 
+        loading,
+        user,
+        setUser,
+      }}
+    >
       {children}
     </GroupContext.Provider>
   );

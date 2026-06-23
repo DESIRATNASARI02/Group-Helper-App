@@ -6,13 +6,6 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useGroup } from "@/lib/context/GroupContext";
 
-interface User {
-  _id: string;
-  name: string;
-  email: string;
-  avatarColor?: string;
-}
-
 const navItems = [
   { href: "/dashboard", icon: "🏠", label: "Dashboard" },
   { href: "/groups", icon: "👥", label: "My Groups" },
@@ -33,24 +26,21 @@ const topicColors: Record<string, string> = {
   "default": "#EF9F27",
 };
 
+const avatarColorMap: Record<string, string> = {
+  "#CECBF6": "#3C3489",
+  "#9FE1CB": "#085041",
+  "#F5C4B3": "#712B13",
+  "#FAC775": "#633806",
+  "#B5D4F4": "#0C447C",
+  "#C0DD97": "#27500A",
+};
+
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { activeGroup, groups, setActiveGroup } = useGroup();
-  const [user, setUser] = useState<User | null>(null);
+  const { activeGroup, groups, setActiveGroup, user } = useGroup(); 
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      const res = await fetch("/api/auth/me");
-      if (res.ok) {
-        const data = await res.json();
-        setUser(data.user);
-      }
-    };
-    fetchUser();
-  }, []);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -80,6 +70,8 @@ export default function Sidebar() {
   const groupColor = activeGroup
     ? topicColors[activeGroup.topic] || topicColors["default"]
     : "#6C63FF";
+
+  const avatarTextColor = avatarColorMap[user?.avatarColor || "#CECBF6"] || "#3C3489"; 
 
   return (
     <aside
@@ -201,8 +193,8 @@ export default function Sidebar() {
           <div
             className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
             style={{
-              background: user?.avatarColor || "#CECBF6",
-              color: "#3C3489",
+              background: user?.avatarColor || "#CECBF6", // <==
+              color: avatarTextColor, // <==
             }}
           >
             {user ? getInitials(user.name) : ".."}

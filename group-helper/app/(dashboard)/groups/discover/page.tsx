@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Topbar from "@/components/ui/Topbar";
 import GroupCard from "@/components/groups/GroupCard";
+import { useGroup } from "@/lib/context/GroupContext"; 
 
 interface Group {
   _id: string;
@@ -15,6 +16,7 @@ interface Group {
 
 export default function DiscoverGroupsPage() {
   const router = useRouter();
+  const { setActiveGroup, groups: myGroups } = useGroup(); 
   const [groups, setGroups] = useState<Group[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -43,7 +45,13 @@ export default function DiscoverGroupsPage() {
     setJoining(groupId);
     try {
       const res = await fetch(`/api/groups/${groupId}/join`, { method: "POST" });
-      if (res.ok) router.push("/dashboard");
+      if (res.ok) {
+        const joinedGroup = groups.find((g) => g._id === groupId); 
+        if (joinedGroup) {
+          setActiveGroup(joinedGroup); 
+        }
+        setTimeout(() => router.push("/dashboard"), 100); 
+      }
     } catch (err) {
       console.error(err);
     } finally {

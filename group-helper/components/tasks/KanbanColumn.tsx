@@ -10,6 +10,7 @@ interface KanbanColumnProps {
   tasks: Task[];
   onMove: (id: string, status: TaskStatus) => void;
   onDelete: (id: string) => void;
+  onView: (task: Task) => void;
   onAddTask: () => void;
 }
 
@@ -20,12 +21,11 @@ export default function KanbanColumn({
   tasks,
   onMove,
   onDelete,
+  onView,
   onAddTask,
 }: KanbanColumnProps) {
   return (
     <div className="flex flex-col gap-3 min-w-48">
-
-      {/* Header */}
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full" style={{ background: color }}></div>
@@ -39,13 +39,17 @@ export default function KanbanColumn({
         </span>
       </div>
 
-      {/* Cards */}
       <div className="flex flex-col gap-2 min-h-32">
         {tasks.map((task) => (
-          <TaskCard key={task._id} task={task} onMove={onMove} onDelete={onDelete} />
+          <TaskCard
+            key={task._id}
+            task={task}
+            onMove={onMove}
+            onDelete={onDelete}
+            onView={onView}
+          />
         ))}
 
-        {/* Add Button */}
         <button
           className="w-full py-2 rounded-lg border border-dashed border-white/10 text-xs text-base-content/30 hover:text-white hover:border-white/30 transition-all"
           onClick={onAddTask}

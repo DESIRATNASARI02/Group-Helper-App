@@ -1,9 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Card from "@/components/ui/Card";
 import Avatar from "@/components/ui/Avatar";
-import { useGroup } from "@/lib/context/GroupContext";
 
 interface Member {
   _id: string;
@@ -12,32 +10,26 @@ interface Member {
   avatarColor?: string;
 }
 
-export default function MembersSection() {
-  const { activeGroup } = useGroup();
-  const [members, setMembers] = useState<Member[]>([]);
-  const [loading, setLoading] = useState(true);
+const avatarColorMap: Record<string, string> = {
+  "#CECBF6": "#3C3489",
+  "#9FE1CB": "#085041",
+  "#F5C4B3": "#712B13",
+  "#FAC775": "#633806",
+  "#B5D4F4": "#0C447C",
+  "#C0DD97": "#27500A",
+};
 
-  useEffect(() => {
-    if (!activeGroup) return;
-    fetchMembers();
-  }, [activeGroup]);
+const getTextColor = (bgColor?: string) => {
+  if (!bgColor) return "#3C3489";
+  return avatarColorMap[bgColor] || "#3C3489";
+};
 
-  const fetchMembers = async () => {
-    if (!activeGroup) return;
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/groups/${activeGroup._id}/members`);
-      if (res.ok) {
-        const data = await res.json();
-        setMembers(data.members || []);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+interface MembersSectionProps { 
+  members: Member[];
+  loading: boolean;
+}
 
+export default function MembersSection({ members, loading }: MembersSectionProps) { 
   const getInitials = (name: string) =>
     name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
@@ -45,7 +37,7 @@ export default function MembersSection() {
     <Card>
       <div className="flex items-center justify-between mb-3">
         <h2 className="font-semibold text-white text-sm">👥 Members</h2>
-        <span className="text-xs text-base-content/40">{members.length} total</span>
+        <span className="text-xs text-base-content/40">{members.length} total</span> 
       </div>
       {loading ? (
         <div className="flex justify-center py-4">
@@ -55,13 +47,13 @@ export default function MembersSection() {
         <p className="text-base-content/40 text-sm text-center py-4">No members yet</p>
       ) : (
         <div className="flex flex-col gap-3">
-          {members.slice(0, 4).map((member, i) => (
+          {members.map((member, i) => ( 
             <div key={member._id} className="flex items-center gap-3">
               <div className="relative">
                 <Avatar
                   initials={getInitials(member.name)}
                   color={member.avatarColor || "#CECBF6"}
-                  textColor="#3C3489"
+                  textColor={getTextColor(member.avatarColor)}
                   size="md"
                 />
                 <div

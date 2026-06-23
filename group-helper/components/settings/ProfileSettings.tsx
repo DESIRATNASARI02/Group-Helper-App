@@ -7,6 +7,7 @@ interface ProfileSettingsProps {
   name: string;
   email: string;
   avatarColor: string;
+  onSave: (updated: { name: string; email: string; avatarColor: string }) => void; 
 }
 
 const avatarColors = [
@@ -18,7 +19,7 @@ const avatarColors = [
   { bg: "#C0DD97", text: "#27500A" },
 ];
 
-export default function ProfileSettings({ name, email, avatarColor }: ProfileSettingsProps) {
+export default function ProfileSettings({ name, email, avatarColor, onSave }: ProfileSettingsProps) { 
   const [form, setForm] = useState({ name, email, avatarColor, password: "" });
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
@@ -53,6 +54,8 @@ export default function ProfileSettings({ name, email, avatarColor }: ProfileSet
 
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
+
+      onSave({ name: form.name, email: form.email, avatarColor: form.avatarColor }); 
     } catch (err) {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -67,7 +70,6 @@ export default function ProfileSettings({ name, email, avatarColor }: ProfileSet
         <p className="text-base-content/50 text-sm mt-1">Update your personal information</p>
       </div>
 
-      {/* Avatar */}
       <div className="flex items-center gap-4">
         <Avatar
           initials={getInitials(form.name)}
@@ -94,7 +96,6 @@ export default function ProfileSettings({ name, email, avatarColor }: ProfileSet
         </div>
       </div>
 
-      {/* Form */}
       <div className="flex flex-col gap-4 max-w-md">
         <div className="form-control">
           <label className="label">

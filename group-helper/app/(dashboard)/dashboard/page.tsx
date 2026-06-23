@@ -11,12 +11,6 @@ import NotesSection from "@/components/dashboard/NotesSection";
 import MembersSection from "@/components/dashboard/MembersSection";
 import { useGroup } from "@/lib/context/GroupContext";
 
-interface User {
-  _id: string;
-  name: string;
-  email: string;
-}
-
 interface Task {
   _id: string;
   title: string;
@@ -48,25 +42,21 @@ interface Message {
   createdAt: string;
 }
 
+interface Member {
+  _id: string;
+  name: string;
+  email: string;
+  avatarColor?: string;
+}
+
 export default function DashboardPage() {
-  const { activeGroup } = useGroup();
-  const [user, setUser] = useState<User | null>(null);
+  const { activeGroup, user } = useGroup(); 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      const res = await fetch("/api/auth/me");
-      if (res.ok) {
-        const data = await res.json();
-        setUser(data.user);
-      }
-    };
-    fetchUser();
-  }, []);
 
   useEffect(() => {
     if (!activeGroup) return;
@@ -77,16 +67,21 @@ export default function DashboardPage() {
     if (!activeGroup) return;
     setLoading(true);
     try {
-      const [tasksRes, notesRes, schedulesRes, messagesRes] = await Promise.all([
+      const [tasksRes, notesRes, schedulesRes, messagesRes, membersRes] = await Promise.all([
         fetch(`/api/tasks?groupId=${activeGroup._id}`),
         fetch(`/api/notes?groupId=${activeGroup._id}`),
         fetch(`/api/schedules?groupId=${activeGroup._id}`),
         fetch(`/api/messages?groupId=${activeGroup._id}`),
+        fetch(`/api/groups/${activeGroup._id}/members`),
       ]);
       if (tasksRes.ok) setTasks(await tasksRes.json());
       if (notesRes.ok) setNotes(await notesRes.json());
       if (schedulesRes.ok) setSchedules(await schedulesRes.json());
       if (messagesRes.ok) setMessages(await messagesRes.json());
+      if (membersRes.ok) {
+        const data = await membersRes.json();
+        setMembers(data.members || []);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -95,7 +90,6 @@ export default function DashboardPage() {
   };
 
   const completedTasks = tasks.filter((t) => t.status === "completed").length;
-  const members = activeGroup?.members || [];
 
   const getNextSession = () => {
     if (schedules.length === 0) return null;
@@ -159,7 +153,7 @@ export default function DashboardPage() {
           currentUserId={user?._id || ""}
         />
         <NotesSection notes={notes} loading={loading} />
-        <MembersSection />
+        <MembersSection members={members} loading={loading} />
       </div>
 
     </div>

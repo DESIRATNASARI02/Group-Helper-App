@@ -1,36 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Topbar from "@/components/ui/Topbar";
 import ProfileSettings from "@/components/settings/ProfileSettings";
 import GroupSettings from "@/components/settings/GroupSettings";
+import { useGroup } from "@/lib/context/GroupContext";
 
 const tabs = [
   { id: "profile", label: "👤 Profile" },
   { id: "group", label: "👥 Group" },
 ];
 
-interface User {
-  _id: string;
-  name: string;
-  email: string;
-  avatarColor?: string;
-}
-
 export default function SettingsPage() {
+  const { user, setUser } = useGroup(); 
   const [activeTab, setActiveTab] = useState("profile");
-  const [user, setUser] = useState<User | null>(null);
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      const res = await fetch("/api/auth/me");
-      if (res.ok) {
-        const data = await res.json();
-        setUser(data.user);
-      }
-    };
-    fetchUser();
-  }, []);
+  const handleProfileSave = (updated: { name: string; email: string; avatarColor: string }) => {
+    if (user) setUser({ ...user, ...updated }); // 
+  };
 
   return (
     <div className="p-6 flex flex-col gap-6" data-theme="night">
@@ -40,7 +27,6 @@ export default function SettingsPage() {
         subtitle="Manage your account and group preferences"
       />
 
-      {/* Tabs */}
       <div className="flex gap-2 border-b border-white/10 pb-0">
         {tabs.map((tab) => (
           <button
@@ -57,13 +43,13 @@ export default function SettingsPage() {
         ))}
       </div>
 
-      {/* Tab Content */}
       <div className="max-w-2xl">
         {activeTab === "profile" && user && (
           <ProfileSettings
             name={user.name}
             email={user.email}
             avatarColor={user.avatarColor || "#CECBF6"}
+            onSave={handleProfileSave} 
           />
         )}
         {activeTab === "group" && <GroupSettings />}

@@ -131,11 +131,7 @@ export default function LoginPage() {
             <div className="form-control">
               <label className="label">
                 <span className="label-text font-medium">Password</span>
-                <span className="label-text-alt">
-                  <a href="#" className="text-xs hover:underline" style={{ color: "#6C63FF" }}>
-                    Lupa password?
-                  </a>
-                </span>
+                
               </label>
               <div className="relative">
                 <input

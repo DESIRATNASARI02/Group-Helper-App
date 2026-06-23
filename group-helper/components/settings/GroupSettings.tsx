@@ -6,10 +6,11 @@ import { useRouter } from "next/navigation";
 import Modal from "@/components/ui/Modal";
 
 export default function GroupSettings() {
-  const { activeGroup } = useGroup();
+  const { activeGroup, resetActiveGroup } = useGroup(); 
   const router = useRouter();
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const [errorModal, setErrorModal] = useState("");
   const [loading, setLoading] = useState(false);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -53,15 +54,16 @@ export default function GroupSettings() {
       });
       if (res.ok) {
         setShowLeaveModal(false);
-        router.push("/groups");
+        resetActiveGroup(); // <==
+        setTimeout(() => router.push("/groups"), 100); 
       } else {
         const data = await res.json();
         setShowLeaveModal(false);
-        setError(data.message || "Failed to leave group.");
+        setErrorModal(data.message || "Failed to leave group.");
       }
     } catch (err) {
       console.error(err);
-      setError("Something went wrong.");
+      setErrorModal("Something went wrong.");
     }
   };
 
@@ -73,15 +75,16 @@ export default function GroupSettings() {
       });
       if (res.ok) {
         setShowDeleteModal(false);
-        router.push("/groups");
+        resetActiveGroup(); // <==
+        setTimeout(() => router.push("/groups"), 100); 
       } else {
         const data = await res.json();
         setShowDeleteModal(false);
-        setError(data.message || "Failed to delete group. Only the group owner can delete it.");
+        setErrorModal(data.message || "Only the group admin can delete this group.");
       }
     } catch (err) {
       console.error(err);
-      setError("Something went wrong.");
+      setErrorModal("Something went wrong.");
     }
   };
 
@@ -187,6 +190,24 @@ export default function GroupSettings() {
           </div>
         </div>
       </div>
+
+      {/* Error Modal */}
+      <Modal
+        isOpen={!!errorModal}
+        onClose={() => setErrorModal("")}
+        title="⚠️ warning"
+      >
+        <p className="text-base-content/70 text-sm">{errorModal}</p>
+        <div className="flex justify-end mt-4">
+          <button
+            className="btn btn-sm text-white"
+            style={{ background: "#6C63FF" }}
+            onClick={() => setErrorModal("")}
+          >
+            OK
+          </button>
+        </div>
+      </Modal>
 
       {/* Leave Modal */}
       <Modal

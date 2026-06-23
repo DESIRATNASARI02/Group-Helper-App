@@ -15,6 +15,10 @@ const userSchema = new Schema(
             type: String,
             required: true,
         },
+        avatarColor: {
+            type: String,
+            default: "#CECBF6",
+        },
     },
     {
         timestamps: true,
