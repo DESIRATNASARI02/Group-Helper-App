@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import NotesFilter from "@/components/notes/NotesFilter";
 import NotesList from "@/components/notes/NotesList";
 import NoteEditor from "@/components/notes/NoteEditor";
+import Modal from "@/components/ui/Modal";
 import { useGroup } from "@/lib/context/GroupContext";
 
 interface Note {
@@ -64,6 +65,11 @@ export default function NotesPage() {
   const [editContent, setEditContent] = useState("");
   const [editTags, setEditTags] = useState<string[]>(["Next.js"]);
   const [user, setUser] = useState<User | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const [pendingNote, setPendingNote] = useState<string | null>(null);
+  const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+  const [originalTitle, setOriginalTitle] = useState("");
+  const [originalContent, setOriginalContent] = useState("");
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -115,23 +121,60 @@ export default function NotesPage() {
     return matchTag && matchSearch;
   });
 
-  const handleSelectNote = (id: string) => {
+  const openNote = (id: string) => {
     const note = notes.find((n) => n.id === id);
     if (note) {
       setSelectedNote(note);
       setEditTitle(note.title);
       setEditContent(note.content);
       setEditTags(note.tags);
+      setOriginalTitle(note.title);
+      setOriginalContent(note.content);
       setIsCreating(false);
+      setIsDirty(false);
     }
   };
 
-  const handleNewNote = () => {
+  const openNewNote = () => {
     setSelectedNote(null);
     setEditTitle("");
     setEditContent("");
     setEditTags(["Next.js"]);
+    setOriginalTitle("");
+    setOriginalContent("");
     setIsCreating(true);
+    setIsDirty(false);
+  };
+
+  const handleSelectNote = (id: string) => {
+    if (selectedNote?.id === id && !isCreating) return;
+
+    if (isDirty) {
+      setPendingNote(id);
+      setShowUnsavedModal(true);
+      return;
+    }
+
+    openNote(id);
+  };
+
+  const handleNewNote = () => {
+    if (isDirty) {
+      setPendingNote("new");
+      setShowUnsavedModal(true);
+      return;
+    }
+    openNewNote();
+  };
+
+  const handleTitleChange = (val: string) => {
+    setEditTitle(val);
+    setIsDirty(val !== originalTitle || editContent !== originalContent);
+  };
+
+  const handleContentChange = (val: string) => {
+    setEditContent(val);
+    setIsDirty(editTitle !== originalTitle || val !== originalContent);
   };
 
   const handleSave = async () => {
@@ -151,7 +194,18 @@ export default function NotesPage() {
         });
         if (res.ok) {
           await fetchNotes();
+          setIsDirty(false);
           setIsCreating(false);
+
+          if (pendingNote && pendingNote !== "new") {
+            openNote(pendingNote);
+          } else if (pendingNote === "new") {
+            openNewNote();
+          } else {
+            setSelectedNote(null);
+            setIsCreating(false);
+          }
+          setPendingNote(null);
         }
       } else if (selectedNote?._id) {
         const res = await fetch(`/api/notes/${selectedNote._id}`, {
@@ -165,11 +219,49 @@ export default function NotesPage() {
         });
         if (res.ok) {
           await fetchNotes();
+          setIsDirty(false);
+          setOriginalTitle(editTitle);
+          setOriginalContent(editContent);
+
+          if (pendingNote) {
+            if (pendingNote === "new") {
+              openNewNote();
+            } else {
+              openNote(pendingNote);
+            }
+            setPendingNote(null);
+          }
         }
       }
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const handleDiscard = () => {
+    setShowUnsavedModal(false);
+    setIsDirty(false);
+
+    if (pendingNote === "new") {
+      openNewNote();
+    } else if (pendingNote) {
+      openNote(pendingNote);
+    } else {
+      setSelectedNote(null);
+      setIsCreating(false);
+    }
+    setPendingNote(null);
+  };
+
+  const handleClose = () => {
+    if (isDirty) {
+      setPendingNote(null);
+      setShowUnsavedModal(true);
+      return;
+    }
+    setSelectedNote(null);
+    setIsCreating(false);
+    setIsDirty(false);
   };
 
   const handleNewNoteFromChat = async (title: string, content: string) => {
@@ -190,6 +282,7 @@ export default function NotesPage() {
         setEditTitle(title);
         setEditContent(content);
         setIsCreating(false);
+        setIsDirty(false);
       }
     } catch (err) {
       console.error(err);
@@ -239,22 +332,20 @@ export default function NotesPage() {
       {/* Editor */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {selectedNote || isCreating ? (
-         <NoteEditor
-          title={editTitle}
-          content={editContent}
-          author={user?.name || "Me"}
-          groupId={activeGroup?._id}
-          tags={editTags}
-          onTitleChange={setEditTitle}
-          onContentChange={setEditContent}
-          onTagsChange={setEditTags}
-          onSave={handleSave}
-          onClose={() => {
-            setSelectedNote(null);
-            setIsCreating(false);
-          }}
-          onNewNoteFromChat={handleNewNoteFromChat}
-        />
+          <NoteEditor
+            key={selectedNote?.id || "new"} 
+            title={editTitle}
+            content={editContent}
+            author={user?.name || "Me"}
+            groupId={activeGroup._id}
+            tags={editTags}
+            onTitleChange={handleTitleChange}
+            onContentChange={handleContentChange}
+            onTagsChange={setEditTags}
+            onSave={handleSave}
+            onClose={handleClose}
+            onNewNoteFromChat={handleNewNoteFromChat}
+          />
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center gap-4">
             <p className="text-4xl">📝</p>
@@ -270,6 +361,42 @@ export default function NotesPage() {
           </div>
         )}
       </div>
+
+      {/* Unsaved Changes Modal */}
+      <Modal
+        isOpen={showUnsavedModal}
+        onClose={() => setShowUnsavedModal(false)}
+        title="Unsaved Changes"
+      >
+        <p className="text-base-content/70 text-sm">
+          You have unsaved changes. What would you like to do?
+        </p>
+        <div className="flex gap-3 mt-4">
+          <button
+            className="btn btn-outline flex-1"
+            onClick={() => setShowUnsavedModal(false)}
+          >
+            Cancel
+          </button>
+          <button
+            className="btn btn-error flex-1"
+            onClick={handleDiscard}
+          >
+            Discard
+          </button>
+          <button
+            className="btn flex-1 text-white"
+            style={{ background: "#6C63FF" }}
+            onClick={() => {
+              setShowUnsavedModal(false);
+              handleSave();
+            }}
+          >
+            Save
+          </button>
+        </div>
+      </Modal>
+
     </div>
   );
 }

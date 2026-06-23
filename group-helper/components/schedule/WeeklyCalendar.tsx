@@ -72,7 +72,7 @@ export default function WeeklyCalendar({
 
     return Math.max(
       (diff / 60) * CELL_HEIGHT,
-      40
+      60
     );
   };
 
