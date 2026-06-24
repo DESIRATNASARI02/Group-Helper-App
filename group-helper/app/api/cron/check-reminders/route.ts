@@ -8,13 +8,13 @@ export async function GET() {
         await connectDB();
 
         const now = new Date();
-        const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000); 
+        const oneDayLater = new Date(now.getTime() + 24 * 60 * 60 * 1000); 
 
         const reminders = await Reminder.find({
             isSent: false,
             remindAt: {
                 $gte: now, 
-                $lte: oneHourLater, 
+                $lte: oneDayLater, 
             },
         });
 
