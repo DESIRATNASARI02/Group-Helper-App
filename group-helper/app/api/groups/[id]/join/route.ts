@@ -30,7 +30,7 @@ export async function POST(
         }
         await connectDB();
 
-        const { id } = await params; // <==
+        const { id } = await params; 
         const group = await Group.findById(id);
 
         if (!group) {
