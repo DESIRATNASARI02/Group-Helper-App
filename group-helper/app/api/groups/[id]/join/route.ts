@@ -5,7 +5,7 @@ import { verifyToken } from "@/lib/auth";
 
 export async function POST(
     request: Request,
-    { params }: { params: { id: string } },
+    { params }: { params: Promise<{ id: string }> }, 
 ) {
     try {
         const token = request.headers
@@ -30,15 +30,15 @@ export async function POST(
         }
         await connectDB();
 
-        const { id } = await params;
+        const { id } = await params; // <==
         const group = await Group.findById(id);
 
-if (!group) {
-    return NextResponse.json(
-        { message: "Group not found" },
-        { status: 404 },
-    );
-}
+        if (!group) {
+            return NextResponse.json(
+                { message: "Group not found" },
+                { status: 404 },
+            );
+        }
 
         if (group.members.includes(decoded.id)) {
             return NextResponse.json(
