@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
   } catch (error: any) { 
     console.error(error);
 
-    // handle rate limit / service unavailable <==
+    // handle rate limit / service unavailable 
     if (error?.status === 503 || error?.statusText === "Service Unavailable") {
       return NextResponse.json(
         { message: "Layanan AI sedang sibuk. Silakan coba beberapa saat lagi." },

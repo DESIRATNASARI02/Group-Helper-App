@@ -8,32 +8,22 @@ import { Task, TaskStatus } from "@/components/tasks/TaskCard";
 import { useGroup } from "@/lib/context/GroupContext";
 
 const columns = [
-    {
-        id: "pending" as TaskStatus,
-        label: "Pending",
-        color: "#888780",
-        bg: "#F1EFE820",
-    },
-    {
-        id: "in_progress" as TaskStatus,
-        label: "In Progress",
-        color: "#EF9F27",
-        bg: "#FAEEDA20",
-    },
-    {
-        id: "completed" as TaskStatus,
-        label: "Completed",
-        color: "#1D9E75",
-        bg: "#E1F5EE20",
-    },
+    { id: "pending" as TaskStatus, label: "Pending", color: "#888780", bg: "#F1EFE820" },
+    { id: "in_progress" as TaskStatus, label: "In Progress", color: "#EF9F27", bg: "#FAEEDA20" },
+    { id: "completed" as TaskStatus, label: "Completed", color: "#1D9E75", bg: "#E1F5EE20" },
 ];
 
 type PriorityFilter = "all" | "low" | "medium" | "high" | "urgent";
 type DeadlineFilter = "all" | "today" | "week" | "overdue" | "none";
 type NewTaskPriority = Exclude<PriorityFilter, "all">;
 
+interface Member { 
+    _id: string;
+    name: string;
+}
+
 export default function TasksPage() {
-    const { activeGroup } = useGroup();
+    const { activeGroup, user } = useGroup(); 
     const [tasks, setTasks] = useState<Task[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
@@ -42,23 +32,36 @@ export default function TasksPage() {
     const [search, setSearch] = useState("");
     const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
     const [deadlineFilter, setDeadlineFilter] = useState<DeadlineFilter>("all");
+    const [members, setMembers] = useState<Member[]>([]); 
     const [newTask, setNewTask] = useState({
         title: "",
         description: "",
         deadline: "",
         priority: "medium" as NewTaskPriority,
+        assignedTo: "", 
     });
+
+    // fetch members 
+    useEffect(() => {
+        if (!activeGroup) return;
+        const fetchMembers = async () => {
+            const res = await fetch(`/api/groups/${activeGroup._id}/members`);
+            if (res.ok) {
+                const data = await res.json();
+                setMembers(data.members || []);
+            }
+        };
+        fetchMembers();
+    }, [activeGroup]);
 
     const fetchTasks = useCallback(async () => {
         if (!activeGroup) return;
         setLoading(true);
         try {
             const params = new URLSearchParams({ groupId: activeGroup._id });
-
             if (showOnlyMyTasks) {
-                params.set("createdBy", "me");
+                params.set("assignedTo", "me");
             }
-
             const res = await fetch(`/api/tasks?${params.toString()}`);
             if (res.ok) {
                 const data = await res.json();
@@ -73,16 +76,12 @@ export default function TasksPage() {
 
     useEffect(() => {
         if (!activeGroup) return;
-        const loadTasks = async () => {
-            await fetchTasks();
-        };
-        loadTasks();
+        fetchTasks();
     }, [activeGroup, fetchTasks]);
 
     const filteredTasks = useMemo(() => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-
         const nextWeek = new Date(today);
         nextWeek.setDate(today.getDate() + 7);
 
@@ -96,24 +95,18 @@ export default function TasksPage() {
                 task.assignedTo?.name.toLowerCase().includes(query);
 
             const matchesPriority =
-                priorityFilter === "all" ||
-                (task.priority || "medium") === priorityFilter;
+                priorityFilter === "all" || (task.priority || "medium") === priorityFilter;
 
             const deadline = task.deadline ? new Date(task.deadline) : null;
             if (deadline) deadline.setHours(0, 0, 0, 0);
 
             let matchesDeadline = true;
             if (deadlineFilter === "today") {
-                matchesDeadline =
-                    !!deadline && deadline.getTime() === today.getTime();
+                matchesDeadline = !!deadline && deadline.getTime() === today.getTime();
             } else if (deadlineFilter === "week") {
-                matchesDeadline =
-                    !!deadline && deadline >= today && deadline <= nextWeek;
+                matchesDeadline = !!deadline && deadline >= today && deadline <= nextWeek;
             } else if (deadlineFilter === "overdue") {
-                matchesDeadline =
-                    !!deadline &&
-                    deadline < today &&
-                    task.status !== "completed";
+                matchesDeadline = !!deadline && deadline < today && task.status !== "completed";
             } else if (deadlineFilter === "none") {
                 matchesDeadline = !deadline;
             }
@@ -140,11 +133,7 @@ export default function TasksPage() {
         filteredTasks.filter((t) => t.status === status);
 
     const handleMove = async (taskId: string, newStatus: TaskStatus) => {
-        setTasks((prev) =>
-            prev.map((t) =>
-                t._id === taskId ? { ...t, status: newStatus } : t,
-            ),
-        );
+        setTasks((prev) => prev.map((t) => t._id === taskId ? { ...t, status: newStatus } : t));
         try {
             await fetch(`/api/tasks/${taskId}`, {
                 method: "PUT",
@@ -179,16 +168,12 @@ export default function TasksPage() {
                     description: newTask.description,
                     deadline: newTask.deadline || undefined,
                     priority: newTask.priority,
+                    assignedTo: newTask.assignedTo || null, 
                 }),
             });
             if (res.ok) {
                 fetchTasks();
-                setNewTask({
-                    title: "",
-                    description: "",
-                    deadline: "",
-                    priority: "medium",
-                });
+                setNewTask({ title: "", description: "", deadline: "", priority: "medium", assignedTo: "" });
                 setShowModal(false);
             }
         } catch (err) {
@@ -198,17 +183,10 @@ export default function TasksPage() {
 
     if (!activeGroup) {
         return (
-            <div
-                className="p-6 flex flex-col items-center justify-center h-96 gap-4"
-                data-theme="night"
-            >
+            <div className="p-6 flex flex-col items-center justify-center h-96 gap-4" data-theme="night">
                 <p className="text-4xl">Groups</p>
-                <p className="text-white font-medium">
-                    No active group selected
-                </p>
-                <p className="text-base-content/50 text-sm">
-                    Select a group from the sidebar to view tasks
-                </p>
+                <p className="text-white font-medium">No active group selected</p>
+                <p className="text-base-content/50 text-sm">Select a group from the sidebar to view tasks</p>
             </div>
         );
     }
@@ -229,10 +207,7 @@ export default function TasksPage() {
                 }
             />
 
-            <div
-                className="rounded-xl border border-white/10 p-4 flex flex-col gap-3"
-                style={{ background: "#17172d" }}
-            >
+            <div className="rounded-xl border border-white/10 p-4 flex flex-col gap-3" style={{ background: "#17172d" }}>
                 <div className="flex flex-col lg:flex-row gap-3">
                     <input
                         type="text"
@@ -241,13 +216,10 @@ export default function TasksPage() {
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
-
                     <select
                         className="select select-bordered select-sm w-full lg:w-44"
                         value={priorityFilter}
-                        onChange={(e) =>
-                            setPriorityFilter(e.target.value as PriorityFilter)
-                        }
+                        onChange={(e) => setPriorityFilter(e.target.value as PriorityFilter)}
                     >
                         <option value="all">All priorities</option>
                         <option value="urgent">Urgent</option>
@@ -255,13 +227,10 @@ export default function TasksPage() {
                         <option value="medium">Medium</option>
                         <option value="low">Low</option>
                     </select>
-
                     <select
                         className="select select-bordered select-sm w-full lg:w-44"
                         value={deadlineFilter}
-                        onChange={(e) =>
-                            setDeadlineFilter(e.target.value as DeadlineFilter)
-                        }
+                        onChange={(e) => setDeadlineFilter(e.target.value as DeadlineFilter)}
                     >
                         <option value="all">All deadlines</option>
                         <option value="today">Due today</option>
@@ -277,14 +246,11 @@ export default function TasksPage() {
                             type="checkbox"
                             className="toggle toggle-sm"
                             checked={showOnlyMyTasks}
-                            onChange={(e) =>
-                                setShowOnlyMyTasks(e.target.checked)
-                            }
+                            onChange={(e) => setShowOnlyMyTasks(e.target.checked)}
                             style={{ color: "#6C63FF" }}
                         />
                         My tasks
                     </label>
-
                     <button
                         className="btn btn-ghost btn-sm"
                         onClick={resetFilters}
@@ -292,9 +258,7 @@ export default function TasksPage() {
                     >
                         Clear filters
                         {activeFilterCount > 0 && (
-                            <span className="badge badge-sm">
-                                {activeFilterCount}
-                            </span>
+                            <span className="badge badge-sm">{activeFilterCount}</span>
                         )}
                     </button>
                 </div>
@@ -302,10 +266,7 @@ export default function TasksPage() {
 
             {loading ? (
                 <div className="flex justify-center py-20">
-                    <span
-                        className="loading loading-spinner loading-lg"
-                        style={{ color: "#6C63FF" }}
-                    ></span>
+                    <span className="loading loading-spinner loading-lg" style={{ color: "#6C63FF" }}></span>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 overflow-x-auto">
@@ -326,11 +287,8 @@ export default function TasksPage() {
                 </div>
             )}
 
-            <Modal
-                isOpen={showModal}
-                onClose={() => setShowModal(false)}
-                title="Add New Task"
-            >
+            {/* Add Task Modal */}
+            <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Add New Task">
                 <div className="form-control">
                     <label className="label">
                         <span className="label-text text-white">Title</span>
@@ -340,48 +298,33 @@ export default function TasksPage() {
                         placeholder="Task title..."
                         className="input input-bordered w-full"
                         value={newTask.title}
-                        onChange={(e) =>
-                            setNewTask({ ...newTask, title: e.target.value })
-                        }
+                        onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
                     />
                 </div>
 
                 <div className="form-control">
                     <label className="label">
-                        <span className="label-text text-white">
-                            Description
-                        </span>
-                        <span className="label-text-alt text-base-content/40">
-                            Optional
-                        </span>
+                        <span className="label-text text-white">Description</span>
+                        <span className="label-text-alt text-base-content/40">Optional</span>
                     </label>
                     <textarea
                         placeholder="Task description..."
                         className="textarea textarea-bordered w-full resize-none h-20"
                         value={newTask.description}
-                        onChange={(e) =>
-                            setNewTask({
-                                ...newTask,
-                                description: e.target.value,
-                            })
-                        }
+                        onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
                     />
                 </div>
 
                 <div className="form-control">
                     <label className="label">
                         <span className="label-text text-white">Deadline</span>
-                        <span className="label-text-alt text-base-content/40">
-                            Optional
-                        </span>
+                        <span className="label-text-alt text-base-content/40">Optional</span>
                     </label>
                     <input
                         type="date"
                         className="input input-bordered w-full"
                         value={newTask.deadline}
-                        onChange={(e) =>
-                            setNewTask({ ...newTask, deadline: e.target.value })
-                        }
+                        onChange={(e) => setNewTask({ ...newTask, deadline: e.target.value })}
                     />
                 </div>
 
@@ -392,12 +335,7 @@ export default function TasksPage() {
                     <select
                         className="select select-bordered w-full"
                         value={newTask.priority}
-                        onChange={(e) =>
-                            setNewTask({
-                                ...newTask,
-                                priority: e.target.value as NewTaskPriority,
-                            })
-                        }
+                        onChange={(e) => setNewTask({ ...newTask, priority: e.target.value as NewTaskPriority })}
                     >
                         <option value="low">Low</option>
                         <option value="medium">Medium</option>
@@ -406,11 +344,30 @@ export default function TasksPage() {
                     </select>
                 </div>
 
-                <div className="flex gap-3 mt-2">
-                    <button
-                        className="btn btn-outline flex-1"
-                        onClick={() => setShowModal(false)}
+                {/* Assigned To */ } {/* <== */}
+                <div className="form-control">
+                    <label className="label">
+                        <span className="label-text text-white">Assigned To</span>
+                        <span className="label-text-alt text-base-content/40">Optional</span>
+                    </label>
+                    <select
+                        className="select select-bordered w-full"
+                        value={newTask.assignedTo}
+                        onChange={(e) => setNewTask({ ...newTask, assignedTo: e.target.value })}
                     >
+                        <option value="">Unassigned</option>
+                        <option value={user?._id}>Me ({user?.name})</option>
+                        {members
+                            .filter((m) => m._id !== user?._id) 
+                            .map((m) => (
+                                <option key={m._id} value={m._id}>{m.name}</option>
+                            ))
+                        }
+                    </select>
+                </div>
+
+                <div className="flex gap-3 mt-2">
+                    <button className="btn btn-outline flex-1" onClick={() => setShowModal(false)}>
                         Cancel
                     </button>
                     <button
@@ -423,65 +380,36 @@ export default function TasksPage() {
                 </div>
             </Modal>
 
-            <Modal
-                isOpen={!!selectedTask}
-                onClose={() => setSelectedTask(null)}
-                title="Task Detail"
-            >
+            {/* Task Detail Modal */}
+            <Modal isOpen={!!selectedTask} onClose={() => setSelectedTask(null)} title="Task Detail">
                 {selectedTask && (
                     <div className="flex flex-col gap-4">
                         <div>
-                            <p className="text-xs text-base-content/40 mb-1">
-                                Title
-                            </p>
-                            <p className="text-white font-semibold">
-                                {selectedTask.title}
-                            </p>
+                            <p className="text-xs text-base-content/40 mb-1">Title</p>
+                            <p className="text-white font-semibold">{selectedTask.title}</p>
                         </div>
-
                         {selectedTask.description && (
                             <div>
-                                <p className="text-xs text-base-content/40 mb-1">
-                                    Description
-                                </p>
-                                <p className="text-sm text-base-content/70 whitespace-pre-line">
-                                    {selectedTask.description}
-                                </p>
+                                <p className="text-xs text-base-content/40 mb-1">Description</p>
+                                <p className="text-sm text-base-content/70 whitespace-pre-line">{selectedTask.description}</p>
                             </div>
                         )}
-
                         <div className="grid grid-cols-2 gap-3 text-sm">
                             <div>
-                                <p className="text-xs text-base-content/40">
-                                    Priority
-                                </p>
-                                <p className="text-white capitalize">
-                                    {selectedTask.priority || "medium"}
-                                </p>
+                                <p className="text-xs text-base-content/40">Priority</p>
+                                <p className="text-white capitalize">{selectedTask.priority || "medium"}</p>
                             </div>
                             <div>
-                                <p className="text-xs text-base-content/40">
-                                    Status
-                                </p>
-                                <p className="text-white capitalize">
-                                    {selectedTask.status.replace("_", " ")}
-                                </p>
+                                <p className="text-xs text-base-content/40">Status</p>
+                                <p className="text-white capitalize">{selectedTask.status.replace("_", " ")}</p>
                             </div>
                             <div>
-                                <p className="text-xs text-base-content/40">
-                                    Created by
-                                </p>
-                                <p className="text-white">
-                                    {selectedTask.createdBy?.name || "-"}
-                                </p>
+                                <p className="text-xs text-base-content/40">Created by</p>
+                                <p className="text-white">{selectedTask.createdBy?.name || "-"}</p>
                             </div>
                             <div>
-                                <p className="text-xs text-base-content/40">
-                                    Assigned to
-                                </p>
-                                <p className="text-white">
-                                    {selectedTask.assignedTo?.name || "-"}
-                                </p>
+                                <p className="text-xs text-base-content/40">Assigned to</p>
+                                <p className="text-white">{selectedTask.assignedTo?.name || "-"}</p>
                             </div>
                         </div>
                     </div>

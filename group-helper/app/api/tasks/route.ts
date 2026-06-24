@@ -19,9 +19,10 @@ export async function GET(req: NextRequest) {
         if (!group) {
             return NextResponse.json({ message: "You are not a member of this group" }, { status: 403 });
         }
-        const filter: { groupId: string; createdBy?: string } = { groupId };
-        if (req.nextUrl.searchParams.get("createdBy") === "me") {
-            filter.createdBy = user.id;
+
+        const filter: { groupId: string; assignedTo?: string } = { groupId }; 
+        if (req.nextUrl.searchParams.get("assignedTo") === "me") { 
+            filter.assignedTo = user.id; 
         }
 
         const tasks = await Task.find(filter)
