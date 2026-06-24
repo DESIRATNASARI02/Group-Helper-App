@@ -14,12 +14,8 @@ export async function POST(request: Request) {
 
         if (!email || !password) {
             return NextResponse.json(
-                {
-                    message: "Email and password are required",
-                },
-                {
-                    status: 400,
-                }
+                { message: "Email and password are required" },
+                { status: 400 }
             );
         }
 
@@ -27,12 +23,8 @@ export async function POST(request: Request) {
 
         if (!user) {
             return NextResponse.json(
-                {
-                    message: "Invalid email or password",
-                },
-                {
-                    status: 401,
-                }
+                { message: "Invalid email or password" },
+                { status: 401 }
             );
         }
 
@@ -40,12 +32,8 @@ export async function POST(request: Request) {
 
         if (!isPasswordValid) {
             return NextResponse.json(
-                {
-                    message: "Invalid email or password",
-                },
-                {
-                    status: 401,
-                }
+                { message: "Invalid email or password" },
+                { status: 401 }
             );
         }
 
@@ -56,9 +44,7 @@ export async function POST(request: Request) {
                 name: user.name,
             },
             process.env.JWT_SECRET!,
-            {
-                expiresIn: "7d",
-            }
+            { expiresIn: "7d" }
         );
 
         const response = NextResponse.json(
@@ -70,28 +56,22 @@ export async function POST(request: Request) {
                     email: user.email,
                 },
             },
-            {
-                status: 200,
-            }
+            { status: 200 }
         );
 
         response.cookies.set("token", token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
-            maxAge: 60 * 60 * 24 * 7, // 7 hari
+            secure: true, 
+            sameSite: "none", 
+            maxAge: 60 * 60 * 24 * 7,
         });
 
         return response;
 
     } catch (error) {
         return NextResponse.json(
-            {
-                message: "Internal Server Error",
-            },
-            {
-                status: 500,
-            }
+            { message: "Internal Server Error" },
+            { status: 500 }
         );
     }
 }
