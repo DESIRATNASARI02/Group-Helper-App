@@ -5,8 +5,16 @@ import { useGroup } from "@/lib/context/GroupContext";
 import { useRouter } from "next/navigation";
 import Modal from "@/components/ui/Modal";
 
+const predefinedTopics = [
+  "JavaScript", "TypeScript", "Python", "React", "Next.js", "Node.js",
+  "MongoDB", "UI/UX", "DevOps", "Komputer & Jaringan", "Teknologi Umum",
+  "Matematika", "Sains & Fisika", "Kimia & Biologi", "Sejarah & Sosial",
+  "Ekonomi & Bisnis", "Hukum", "Kesehatan & Medis", "Bahasa & Linguistik",
+  "Seni & Desain", "Musik", "Olahraga", "Transportasi", "Lingkungan & Alam",
+]; 
+
 export default function GroupSettings() {
-  const { activeGroup, resetActiveGroup } = useGroup(); 
+  const { activeGroup, resetActiveGroup } = useGroup();
   const router = useRouter();
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
@@ -20,7 +28,7 @@ export default function GroupSettings() {
     description: activeGroup?.description || "",
   });
 
-  const topics = ["MongoDB", "Next.js", "React", "TypeScript", "Node.js", "JavaScript", "Python", "UI/UX", "DevOps", "Other"];
+  const isOther = form.topic !== "" && !predefinedTopics.includes(form.topic); 
 
   const handleSave = async () => {
     if (!activeGroup) return;
@@ -54,8 +62,8 @@ export default function GroupSettings() {
       });
       if (res.ok) {
         setShowLeaveModal(false);
-        resetActiveGroup(); 
-        setTimeout(() => router.push("/groups"), 100); 
+        resetActiveGroup();
+        setTimeout(() => router.push("/groups"), 100);
       } else {
         const data = await res.json();
         setShowLeaveModal(false);
@@ -75,8 +83,8 @@ export default function GroupSettings() {
       });
       if (res.ok) {
         setShowDeleteModal(false);
-        resetActiveGroup(); 
-        setTimeout(() => router.push("/groups"), 100); 
+        resetActiveGroup();
+        setTimeout(() => router.push("/groups"), 100);
       } else {
         const data = await res.json();
         setShowDeleteModal(false);
@@ -122,13 +130,61 @@ export default function GroupSettings() {
           </label>
           <select
             className="select select-bordered w-full"
-            value={form.topic}
-            onChange={(e) => setForm({ ...form, topic: e.target.value })}
+            value={isOther ? "Other" : form.topic} 
+            onChange={(e) => {
+              if (e.target.value === "Other") {
+                setForm({ ...form, topic: "" });
+              } else {
+                setForm({ ...form, topic: e.target.value });
+              }
+            }}
           >
-            {topics.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
+            <option value="" disabled>Select a topic...</option>
+            <optgroup label="💻 Teknologi & Pemrograman">
+              <option value="JavaScript">JavaScript</option>
+              <option value="TypeScript">TypeScript</option>
+              <option value="Python">Python</option>
+              <option value="React">React</option>
+              <option value="Next.js">Next.js</option>
+              <option value="Node.js">Node.js</option>
+              <option value="MongoDB">MongoDB</option>
+              <option value="UI/UX">UI/UX</option>
+              <option value="DevOps">DevOps</option>
+              <option value="Komputer & Jaringan">Komputer & Jaringan</option>
+              <option value="Teknologi Umum">Teknologi Umum</option>
+            </optgroup>
+            <optgroup label="📚 Akademik">
+              <option value="Matematika">Matematika</option>
+              <option value="Sains & Fisika">Sains & Fisika</option>
+              <option value="Kimia & Biologi">Kimia & Biologi</option>
+              <option value="Sejarah & Sosial">Sejarah & Sosial</option>
+              <option value="Ekonomi & Bisnis">Ekonomi & Bisnis</option>
+              <option value="Hukum">Hukum</option>
+              <option value="Kesehatan & Medis">Kesehatan & Medis</option>
+              <option value="Bahasa & Linguistik">Bahasa & Linguistik</option>
+            </optgroup>
+            <optgroup label="🎨 Kreatif & Lainnya">
+              <option value="Seni & Desain">Seni & Desain</option>
+              <option value="Musik">Musik</option>
+              <option value="Olahraga">Olahraga</option>
+              <option value="Transportasi">Transportasi</option>
+              <option value="Lingkungan & Alam">Lingkungan & Alam</option>
+            </optgroup>
+            <optgroup label="➕ Lainnya">
+              <option value="Other">Other (Custom)</option>
+            </optgroup>
           </select>
+
+          
+          {(isOther || form.topic === "") && (
+            <input
+              type="text"
+              placeholder="Tulis topic kamu..."
+              className="input input-bordered w-full mt-2"
+              value={isOther ? form.topic : ""}
+              onChange={(e) => setForm({ ...form, topic: e.target.value })}
+            />
+          )}
         </div>
 
         <div className="form-control">
@@ -195,7 +251,7 @@ export default function GroupSettings() {
       <Modal
         isOpen={!!errorModal}
         onClose={() => setErrorModal("")}
-        title="⚠️ warning"
+        title="⚠️ Warning"
       >
         <p className="text-base-content/70 text-sm">{errorModal}</p>
         <div className="flex justify-end mt-4">

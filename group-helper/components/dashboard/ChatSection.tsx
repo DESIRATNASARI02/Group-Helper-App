@@ -1,12 +1,14 @@
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Avatar from "@/components/ui/Avatar";
+import ReactMarkdown from "react-markdown";
 
 interface Message {
   _id: string;
   content: string;
   senderId: { _id: string; name: string };
   createdAt: string;
+  isAI?: boolean; 
 }
 
 interface ChatSectionProps {
@@ -38,22 +40,42 @@ export default function ChatSection({ messages, loading, currentUserId }: ChatSe
       ) : (
         <div className="flex flex-col gap-3">
           {recentMessages.map((msg) => {
-            const isMe = msg.senderId?._id === currentUserId;
+            const isMe = !msg.isAI && msg.senderId?._id === currentUserId;
+            const isAI = msg.isAI || false; 
+
             return (
               <div key={msg._id} className={`flex gap-2 items-start ${isMe ? "flex-row-reverse" : ""}`}>
-                <Avatar
-                  initials={getInitials(msg.senderId?.name || "?")}
-                  color="#CECBF6"
-                  textColor="#3C3489"
-                  size="sm"
-                />
-                <div className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
-                  <p className="text-xs text-base-content/40 mb-1">{isMe ? "You" : msg.senderId?.name}</p>
+                {/* Avatar */}
+                {isAI ? ( 
                   <div
-                    className="text-xs px-3 py-2 rounded-lg text-white max-w-xs"
-                    style={{ background: isMe ? "#6C63FF" : "#2a2a4a" }}
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                    style={{ background: "#6C63FF", color: "white" }}
                   >
-                    {msg.content}
+                    AI
+                  </div>
+                ) : (
+                  <Avatar
+                    initials={getInitials(msg.senderId?.name || "?")}
+                    color="#CECBF6"
+                    textColor="#3C3489"
+                    size="sm"
+                  />
+                )}
+
+                <div className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
+                  {/* Name */}
+                  <p className="text-xs mb-1" style={{ color: isAI ? "#a78bfa" : "rgba(255,255,255,0.4)" }}>
+                    {isAI ? "✨ AI Assistant" : isMe ? "You" : msg.senderId?.name} {/* <== */}
+                  </p>
+
+                  {/* Bubble */}
+                  <div
+                    className="text-xs px-3 py-2 rounded-lg text-white max-w-xs prose prose-invert prose-xs [&>*]:mb-2 [&>*:last-child]:mb-0"
+                    style={{
+                      background: isMe ? "#6C63FF" : isAI ? "#2a1f5e" : "#2a2a4a", 
+                    }}
+                  >
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
                   </div>
                 </div>
               </div>

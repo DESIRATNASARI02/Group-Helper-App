@@ -24,12 +24,12 @@ const getTextColor = (bgColor?: string) => {
   return avatarColorMap[bgColor] || "#3C3489";
 };
 
-interface MembersSectionProps { 
+interface MembersSectionProps {
   members: Member[];
   loading: boolean;
 }
 
-export default function MembersSection({ members, loading }: MembersSectionProps) { 
+export default function MembersSection({ members, loading }: MembersSectionProps) {
   const getInitials = (name: string) =>
     name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
@@ -37,7 +37,7 @@ export default function MembersSection({ members, loading }: MembersSectionProps
     <Card>
       <div className="flex items-center justify-between mb-3">
         <h2 className="font-semibold text-white text-sm">👥 Members</h2>
-        <span className="text-xs text-base-content/40">{members.length} total</span> 
+        <span className="text-xs text-base-content/40">{members.length} total</span>
       </div>
       {loading ? (
         <div className="flex justify-center py-4">
@@ -47,20 +47,14 @@ export default function MembersSection({ members, loading }: MembersSectionProps
         <p className="text-base-content/40 text-sm text-center py-4">No members yet</p>
       ) : (
         <div className="flex flex-col gap-3">
-          {members.map((member, i) => ( 
+          {members.map((member, i) => (
             <div key={member._id} className="flex items-center gap-3">
-              <div className="relative">
-                <Avatar
-                  initials={getInitials(member.name)}
-                  color={member.avatarColor || "#CECBF6"}
-                  textColor={getTextColor(member.avatarColor)}
-                  size="md"
-                />
-                <div
-                  className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-base-100"
-                  style={{ background: "#1D9E75" }}
-                />
-              </div>
+              <Avatar
+                initials={getInitials(member.name)}
+                color={member.avatarColor || "#CECBF6"}
+                textColor={getTextColor(member.avatarColor)}
+                size="md"
+              />
               <div className="flex-1">
                 <p className="text-sm font-medium text-white">{member.name}</p>
                 <p className="text-xs text-base-content/40">

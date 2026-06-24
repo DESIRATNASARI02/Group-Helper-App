@@ -40,6 +40,7 @@ interface Message {
   content: string;
   senderId: { _id: string; name: string };
   createdAt: string;
+  isAI?: boolean;
 }
 
 interface Member {
